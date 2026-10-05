@@ -3,9 +3,9 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>AP-LEAD | School Account Signup</title>
+    <title>FILIPINO DATAHUB | School Account Signup</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="AP-LEAD school account registration" name="description" />
+    <meta content="Create a school account for FILIPINO DATAHUB." name="description" />
     <meta content="Coderthemes" name="author" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <link rel="shortcut icon" href="<?= base_url(); ?>assets/images/favicon.ico">
@@ -38,14 +38,14 @@
 
     <style>
         :root {
-            --signup-primary: #8b1e3f;
-            --signup-primary-dark: #5f1129;
-            --signup-accent: #e9b949;
-            --signup-ink: #223047;
-            --signup-muted: #667085;
-            --signup-border: #e6eaf2;
+            --signup-primary: #174f7e;
+            --signup-primary-dark: #0b2d4d;
+            --signup-accent: #f2b632;
+            --signup-ink: #1c3045;
+            --signup-muted: #647487;
+            --signup-border: #dce4ec;
             --signup-surface: #ffffff;
-            --signup-surface-soft: #fff7f4;
+            --signup-surface-soft: #f5f7fa;
             --signup-shadow: 0 24px 60px rgba(22, 32, 55, .14);
         }
 
@@ -55,7 +55,7 @@
             font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
             background:
                 radial-gradient(circle at top left, rgba(233, 185, 73, .14), transparent 24%),
-                radial-gradient(circle at bottom right, rgba(139, 30, 63, .13), transparent 26%),
+                radial-gradient(circle at bottom right, rgba(23, 79, 126, .13), transparent 26%),
                 linear-gradient(135deg, #f7efe8 0%, #fbfcff 48%, #f5f7fb 100%);
         }
 
@@ -80,7 +80,7 @@
             left: -110px;
             width: 280px;
             height: 280px;
-            background: rgba(139, 30, 63, .08);
+            background: rgba(23, 79, 126, .08);
         }
 
         .signup-shell::after {
@@ -111,7 +111,7 @@
             color: #fff;
             background:
                 radial-gradient(circle at top right, rgba(255, 255, 255, .18), transparent 25%),
-                linear-gradient(160deg, #5f1129 0%, #8b1e3f 45%, #c76c48 100%);
+                linear-gradient(160deg, #082540 0%, #174f7e 55%, #2c648d 100%);
         }
 
         .signup-sidebar::after {
@@ -140,7 +140,8 @@
 
         .signup-brand img {
             width: 60px;
-            height: auto;
+            height: 60px;
+            object-fit: contain;
         }
 
         .signup-brand-text span {
@@ -259,7 +260,8 @@
 
         .signup-mobile-brand img {
             width: 52px;
-            height: auto;
+            height: 52px;
+            object-fit: contain;
         }
 
         .signup-mobile-brand strong {
@@ -304,8 +306,8 @@
             padding: 28px 30px 22px;
             border-bottom: 1px solid var(--signup-border);
             background:
-                radial-gradient(circle at top right, rgba(139, 30, 63, .08), transparent 26%),
-                linear-gradient(180deg, #fff9f6 0%, #ffffff 100%);
+                radial-gradient(circle at top right, rgba(23, 79, 126, .08), transparent 26%),
+                linear-gradient(180deg, #f5f8fb 0%, #ffffff 100%);
         }
 
         .signup-eyebrow {
@@ -316,7 +318,7 @@
             padding: 8px 12px;
             border-radius: 999px;
             color: var(--signup-primary);
-            background: #fdecef;
+            background: #eaf2f8;
             font-size: 11px;
             font-weight: 700;
             letter-spacing: .06em;
@@ -389,7 +391,7 @@
             flex: 0 0 36px;
             border-radius: 12px;
             color: var(--signup-primary-dark);
-            background: #fdecef;
+            background: #eaf2f8;
             font-size: 13px;
             font-weight: 700;
         }
@@ -423,8 +425,8 @@
         .signup-field .form-control:focus,
         .signup-field .custom-select:focus,
         .signup-field .form-control:focus + .signup-password-toggle {
-            border-color: rgba(139, 30, 63, .45);
-            box-shadow: 0 0 0 .18rem rgba(139, 30, 63, .12);
+            border-color: rgba(23, 79, 126, .45);
+            box-shadow: 0 0 0 .18rem rgba(23, 79, 126, .12);
             background-color: #fff;
         }
 
@@ -515,8 +517,8 @@
             border: 0;
             border-radius: 999px;
             color: #fff;
-            background: linear-gradient(135deg, #8b1e3f, #be5c3c);
-            box-shadow: 0 14px 28px rgba(139, 30, 63, .2);
+            background: linear-gradient(135deg, #0b2d4d, #174f7e);
+            box-shadow: 0 14px 28px rgba(11, 45, 77, .2);
             font-size: 14px;
             font-weight: 700;
         }
@@ -535,7 +537,7 @@
         .signup-modal .modal-header {
             border-bottom: 0;
             padding: 18px 22px;
-            background: linear-gradient(135deg, #8b1e3f, #be5c3c);
+            background: linear-gradient(135deg, #0b2d4d, #174f7e);
         }
 
         .signup-modal .modal-header .modal-title {
@@ -628,15 +630,16 @@
                 <div class="row no-gutters">
                     <div class="col-xl-5">
                         <aside class="signup-sidebar">
-                            <a href="<?= base_url(); ?>" class="signup-brand">
+                            <a href="<?= base_url('homepage'); ?>" class="signup-brand">
+                                <img src="<?= base_url('assets/images/filipino-data-hub-emblem-transparent.png'); ?>" alt="" width="1254" height="1254">
                                 <div class="signup-brand-text">
-                                    <span>AP-LEAD Portal</span>
-                                    <strong>AP-LEAD</strong>
+                                    <span>Filipino Subject</span>
+                                    <strong>FILIPINO DATAHUB</strong>
                                 </div>
                             </a>
 
                             <h1>Create your school account with confidence.</h1>
-                            <p>Register your school profile, connect it to the correct division and district, and sign in to AP-LEAD immediately after registration.</p>
+                            <p>Register your school profile, connect it to the correct division and district, and sign in to FILIPINO DATAHUB after registration.</p>
 
                             <div class="signup-side-card">
                                 <h5>Before you begin</h5>
@@ -651,7 +654,7 @@
                             <div class="signup-side-card">
                                 <h5>Who should use this page?</h5>
                                 <ul class="signup-side-list">
-                                    <li><i class="mdi mdi-school-outline"></i><span>School users registering their school account in AP-LEAD.</span></li>
+                                    <li><i class="mdi mdi-school-outline"></i><span>School users registering their school account in FILIPINO DATAHUB.</span></li>
                                     <li><i class="mdi mdi-account-supervisor-outline"></i><span>District users should use the district signup page instead of the school account form.</span></li>
                                 </ul>
                             </div>
@@ -672,14 +675,15 @@
                     <div class="col-xl-7">
                         <main class="signup-main">
                             <div class="signup-mobile-brand">
+                                <img src="<?= base_url('assets/images/filipino-data-hub-emblem-transparent.png'); ?>" alt="" width="1254" height="1254">
                                 <div>
-                                    <strong>AP-LEAD</strong>
+                                    <strong>FILIPINO DATAHUB</strong>
                                     <span>School account registration</span>
                                 </div>
                             </div>
 
                             <div class="signup-main-topbar">
-                                <a href="<?= base_url('log_in'); ?>">
+                                <a href="<?= base_url('homepage'); ?>#portal">
                                     <i class="mdi mdi-arrow-left"></i>
                                     Back to Sign In
                                 </a>
@@ -692,7 +696,7 @@
                                         School Signup
                                     </span>
                                     <h2>Register your school profile</h2>
-                                    <p>Fill in the required school details below. All fields are used to create and organize your school account in AP-LEAD.</p>
+                                    <p>Fill in the required school details below. All fields are used to create and organize your school account in FILIPINO DATAHUB.</p>
                                 </div>
 
                                 <div class="signup-form-body">
@@ -813,7 +817,7 @@
                                                     <label for="termsAccepted">
                                                         I accept the
                                                         <a href="#" data-toggle="modal" data-target="#termsModal">Declaration and Attestation</a>
-                                                        for registering and processing school information in AP-LEAD.
+                                                        for registering and processing school information in FILIPINO DATAHUB.
                                                     </label>
                                                 </div>
                                             </div>
@@ -851,16 +855,16 @@
                 </div>
                 <div class="modal-body">
                     <p>
-                        I declare that I am authorized to register and manage this school account in AP-LEAD Region XI. I attest that the school identification, official email address, division, and district information I provide is accurate and complete, and I will keep these details up to date.
+                        I declare that I am authorized to register and manage this school account in FILIPINO DATAHUB Region XI. I attest that the school identification, official email address, division, and district information I provide is accurate and complete, and I will keep these details up to date.
                     </p>
                     <p>
-                        I understand that AP-LEAD supports the monitoring of learner progress, assessment results, and least learned competencies in Araling Panlipunan. School submissions help identify learning gaps and guide instructional interventions, technical assistance, and recommendations at the school, district, division, and regional levels.
+                        I understand that FILIPINO DATAHUB supports the monitoring of learner progress, assessment results, and competencies in Filipino. School submissions help identify learning needs and guide instructional interventions, technical assistance, and recommendations at the school, district, division, and regional levels.
                     </p>
                     <p>
                         I acknowledge that the registration details and school data submitted through this account will be collected, stored, and processed for account administration, learning assessment monitoring, reporting, and educational support. I will submit only information necessary for these purposes, protect account credentials, and handle learner and school information responsibly, sharing it only with authorized personnel for official use.
                     </p>
                     <p class="mb-0">
-                        By selecting the declaration checkbox and clicking “Create School Account,” I confirm that I have read and understood this declaration, attest to the accuracy of the information provided, and agree to use AP-LEAD responsibly for its stated educational purposes. For account concerns or corrections to submitted information, I will contact the division system administrator.
+                        By selecting the declaration checkbox and clicking “Create School Account,” I confirm that I have read and understood this declaration, attest to the accuracy of the information provided, and agree to use FILIPINO DATAHUB responsibly for its stated educational purposes. For account concerns or corrections to submitted information, I will contact the division system administrator.
                     </p>
                 </div>
             </div>
