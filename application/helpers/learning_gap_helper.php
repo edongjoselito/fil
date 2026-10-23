@@ -82,7 +82,7 @@ if (!function_exists('lg_term_interpretation')) {
 
         $cpl_record_count = array_sum(array_map(function ($row) { return (int) $row->cpl_record_count; }, $term_performance));
         if ($record_count > 0 && $cpl_record_count < $record_count) {
-            $lines[] = 'CPL is based on only ' . number_format($cpl_record_count) . ' of ' . lg_count_label((int) $record_count, 'record') . ', so treat it as indicative until more schools encode their CPL.';
+            $lines[] = 'CPL is based on only ' . number_format($cpl_record_count) . ' of ' . lg_count_label((int) $record_count, 'record') . ', so treat it as indicative until it is reported consistently in the division summaries.';
         }
         return $lines;
     }
@@ -97,18 +97,12 @@ if (!function_exists('lg_division_summary_interpretation')) {
 
         $reporting = array_values(array_filter($rows, function ($row) { return (int) $row->record_count > 0; }));
         $silent = array_values(array_filter($rows, function ($row) { return (int) $row->record_count === 0; }));
-        $line = number_format(count($reporting)) . ' of ' . lg_count_label(count($rows), 'division') . (count($reporting) === 1 ? ' has' : ' have') . ' submitted records.';
+        $line = number_format(count($reporting)) . ' of ' . lg_count_label(count($rows), 'division') . (count($reporting) === 1 ? ' has' : ' have') . ' entered summary records.';
         if (!empty($silent)) {
             $names = array_map(function ($row) { return html_escape($row->division_name); }, array_slice($silent, 0, 3));
-            $line .= ' No submissions yet from ' . implode(', ', $names) . (count($silent) > 3 ? ' and ' . number_format(count($silent) - 3) . ' more' : '') . '.';
+            $line .= ' No division summaries yet from ' . implode(', ', $names) . (count($silent) > 3 ? ' and ' . number_format(count($silent) - 3) . ' more' : '') . '.';
         }
         $lines[] = $line;
-
-        $reporting_schools = array_sum(array_map(function ($row) { return (int) $row->school_count; }, $rows));
-        $total_schools = array_sum(array_map(function ($row) { return (int) $row->total_school_count; }, $rows));
-        if ($total_schools > 0) {
-            $lines[] = number_format($reporting_schools) . ' of ' . lg_count_label($total_schools, 'registered school') . ' (' . number_format(($reporting_schools / $total_schools) * 100, 1) . '%) ' . ($reporting_schools === 1 ? 'is' : 'are') . ' reporting across the region.';
-        }
 
         $assessed = array_values(array_filter($rows, function ($row) { return (int) $row->learners_assessed > 0; }));
         if (!empty($assessed)) {
@@ -137,16 +131,16 @@ if (!function_exists('lg_ranking_interpretation')) {
         $top_count = (int) $top[0]->submission_count;
         $context = html_escape($learning_area) . ', ' . html_escape($term);
         if (count($top) === 1) {
-            $lines[] = 'The most frequently selected competency in ' . $context . ' is <strong>“' . html_escape($top[0]->competency) . '”</strong> (' . html_escape($top[0]->grade_level) . '), chosen in ' . lg_count_label($top_count, 'submission') . ' from ' . lg_count_label((int) $top[0]->school_count, 'school') . '.';
+            $lines[] = 'The most frequently selected competency in ' . $context . ' is <strong>“' . html_escape($top[0]->competency) . '”</strong> (' . html_escape($top[0]->grade_level) . '), recorded in ' . lg_count_label($top_count, 'division summary record') . '.';
         } else {
             $lines[] = number_format(count($top)) . ' competencies are tied at #1 in ' . $context . ', each chosen in ' . lg_count_label($top_count, 'submission') . '.';
         }
 
-        $recurring = count(array_filter($rows, function ($row) { return (int) $row->school_count >= 2; }));
+        $recurring = count(array_filter($rows, function ($row) { return (int) $row->submission_count >= 2; }));
         if ($recurring > 0) {
-            $lines[] = lg_count_label($recurring, 'competency', 'competencies') . ' ' . ($recurring === 1 ? 'is' : 'are') . ' reported by two or more schools. These are good candidates for division-wide remediation materials or LAC sessions.';
+            $lines[] = lg_count_label($recurring, 'competency', 'competencies') . ' ' . ($recurring === 1 ? 'appears' : 'appear') . ' in multiple summary records. These are good candidates for division-wide remediation materials or LAC sessions.';
         } else {
-            $lines[] = 'Every listed competency comes from a single school, so support is best given school by school rather than division-wide.';
+            $lines[] = 'Each listed competency appears in one summary record; use the division-level assessment context to plan support.';
         }
 
         $grades = array_unique(array_map(function ($row) { return (string) $row->grade_level; }, array_slice($rows, 0, 3)));

@@ -1,8 +1,6 @@
 <?php
 $division_name = !empty($division) ? $division->description : 'Division';
 $district_total = count($district);
-$encoded_school_total = isset($encoded_total_schools) ? (int) $encoded_total_schools : 0;
-$signup_rate = isset($signup_percentage) ? (float) $signup_percentage : 0;
 ?>
 
 <style>
@@ -329,8 +327,8 @@ $signup_rate = isset($signup_percentage) ? (float) $signup_percentage : 0;
         <div class="col-12">
             <div class="district-accounts-hero">
                 <div>
-                    <h2><i class="mdi mdi-account-network-outline mr-2"></i>District &amp; School Accounts</h2>
-                    <p>Manage account access for schools under <?= html_escape(mb_convert_case($division_name, MB_CASE_TITLE, 'UTF-8')); ?>.</p>
+                    <h2><i class="mdi mdi-map-marker-multiple-outline mr-2"></i>District &amp; School Directory</h2>
+                    <p>Manage organizational district and school records under <?= html_escape(mb_convert_case($division_name, MB_CASE_TITLE, 'UTF-8')); ?>. School and district sign-in accounts are disabled.</p>
                 </div>
                 <div class="district-accounts-summary">
                     <?php if($this->session->position == 'division' || $this->session->position == 'Admin'){ ?>
@@ -370,9 +368,6 @@ $signup_rate = isset($signup_percentage) ? (float) $signup_percentage : 0;
                     $schools = isset($schools_by_district[$district_id])
                         ? $schools_by_district[$district_id]
                         : array();
-                    $district_accounts = isset($district_user_counts[$district_id])
-                        ? $district_user_counts[$district_id]
-                        : 0;
                     $panel_number = $index + 1;
                 ?>
                     <div class="district-account-card">
@@ -392,10 +387,6 @@ $signup_rate = isset($signup_percentage) ? (float) $signup_percentage : 0;
                                     </span>
                                 </span>
                                 <span class="district-account-header-actions">
-                                    <span class="district-user-badge">
-                                        <i class="mdi mdi-account-key-outline"></i>
-                                        <?= $district_accounts; ?> district <?= $district_accounts === 1 ? 'account' : 'accounts'; ?>
-                                    </span>
                                     <i class="mdi mdi-chevron-down district-chevron"></i>
                                 </span>
                             </a>
@@ -409,12 +400,6 @@ $signup_rate = isset($signup_percentage) ? (float) $signup_percentage : 0;
                         >
                             <div class="district-account-body">
                                 <div class="mb-2 text-right">
-                                    <a
-                                        href="<?= base_url(); ?>Pages/district_userlist_by_division/<?= $district_row->id; ?>"
-                                        class="btn btn-outline-primary btn-sm"
-                                    >
-                                        <i class="mdi mdi-account-supervisor-outline"></i> District Accounts
-                                    </a>
                                     <?php if($this->session->position == 'division' || $this->session->position == 'Admin'){ ?>
                                     <a
                                         href="<?= base_url(); ?>Pages/district_update/<?= $district_row->id; ?>"
@@ -441,56 +426,19 @@ $signup_rate = isset($signup_percentage) ? (float) $signup_percentage : 0;
                                                     <th>No.</th>
                                                     <th>School ID</th>
                                                     <th>School Name</th>
-                                                    <th>Account</th>
                                                     <th>Actions</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <?php foreach ($schools as $school_index => $school) :
                                                     $school_id = (string) $school->schoolID;
-                                                    $has_account = !empty($school_usernames[$school_id]);
-                                                    $account_id = isset($school_account_ids[$school_id])
-                                                        ? $school_account_ids[$school_id]
-                                                        : null;
                                                 ?>
                                                     <tr>
                                                         <td><span class="school-sequence"><?= $school_index + 1; ?></span></td>
                                                         <td><span class="school-id-text"><?= html_escape($school_id); ?></span></td>
                                                         <td class="school-account-name"><?= html_escape(mb_convert_case($school->schoolName, MB_CASE_TITLE, 'UTF-8')); ?></td>
                                                         <td>
-                                                            <span class="account-state <?= $has_account ? 'active' : 'missing'; ?>">
-                                                                <i class="mdi <?= $has_account ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline'; ?>"></i>
-                                                                <?= $has_account ? 'Active' : 'Not created'; ?>
-                                                            </span>
-                                                        </td>
-                                                        <td>
                                                             <div class="school-account-actions">
-                                                                <?php if (!$has_account) { ?>
-                                                                    <?= form_open('Pages/add_school_user', array(
-                                                                        'style' => 'display:inline;',
-                                                                        'onsubmit' => "return confirm('Create an account for this school?');"
-                                                                    )); ?>
-                                                                        <input type="hidden" name="school_id" value="<?= html_escape($school_id); ?>">
-                                                                    <button type="submit" class="btn btn-success btn-sm">
-                                                                        <i class="mdi mdi-account-plus-outline"></i> Add Account
-                                                                    </button>
-                                                                    <?= form_close(); ?>
-                                                                <?php } else { ?>
-                                                                    <?= form_open(
-                                                                        'pages/user_reset_password',
-                                                                        array(
-                                                                            'style' => 'display:inline;',
-                                                                            'onsubmit' => "return confirm('Reset this school account password?');"
-                                                                        )
-                                                                    ); ?>
-                                                                        <input type="hidden" name="id" value="<?= (int) $account_id; ?>">
-                                                                        <input type="hidden" name="return_to" value="district_account">
-                                                                        <button type="submit" class="btn btn-warning btn-sm">
-                                                                            <i class="mdi mdi-lock-reset"></i> Reset Password
-                                                                        </button>
-                                                                    </form>
-                                                                <?php } ?>
-
                                                                 <a href="<?= base_url(); ?>school/<?= rawurlencode($school_id); ?>" class="btn btn-info btn-sm">
                                                                     <i class="mdi mdi-eye-outline"></i> View
                                                                 </a>

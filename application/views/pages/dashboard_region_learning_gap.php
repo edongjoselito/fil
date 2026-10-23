@@ -21,14 +21,13 @@ foreach ($division_performance_rows as $performance_row) {
 
 $records_url = base_url('Pages/learning_gap_records');
 $overview_url = base_url('Pages/learning_gap');
-$school_summary_url = base_url('Pages/learning_gap_school_summary');
 
 $display_name = isset($this->session->user) && trim((string) $this->session->user) !== ''
     ? mb_convert_case((string) $this->session->user, MB_CASE_TITLE, 'UTF-8')
     : 'Regional User';
 
 $record_count = (int) $summary->record_count;
-$reporting_school_count = (int) $summary->school_count;
+$reporting_division_count = (int) $summary->school_count;
 $learners_assessed = (int) $summary->learners_assessed;
 $learners_with_gap = (int) $summary->learners_with_gap;
 $gap_rate = $learners_assessed > 0 ? ($learners_with_gap / $learners_assessed) * 100 : 0;
@@ -57,9 +56,6 @@ $theme_max_count = !empty($thematic_analysis['themes'])
     ? max(array_map(function ($theme) { return (int) $theme->record_count; }, $thematic_analysis['themes']))
     : 0;
 
-$network_districts = isset($district_count) ? (int) $district_count : 0;
-$network_schools = isset($registered_school_count) ? (int) $registered_school_count : 0;
-$school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_schools) * 100 : 0;
 ?>
 <link rel="stylesheet" href="<?= base_url('assets/css/region-dashboard.css'); ?>?v=<?= filemtime(FCPATH . 'assets/css/region-dashboard.css'); ?>">
 
@@ -72,28 +68,25 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
                 <span>Welcome, <?= html_escape($display_name); ?></span>
                 <span class="rd-num">Fiscal Year <?= (int) $this->session->fy; ?></span>
                 <span class="rd-num"><?= number_format($divisions_total); ?> division<?= $divisions_total === 1 ? '' : 's'; ?></span>
-                <span class="rd-num"><?= number_format($network_districts); ?> district<?= $network_districts === 1 ? '' : 's'; ?></span>
-                <span class="rd-num"><?= number_format($network_schools); ?> registered school<?= $network_schools === 1 ? '' : 's'; ?></span>
             </p>
+            <p>Division-encoded summaries only; historical school-level entries remain stored but are excluded from these totals.</p>
         </div>
         <div class="rd-header-actions">
             <a class="btn btn-light" href="<?= $overview_url; ?>"><i class="mdi mdi-chart-bar" aria-hidden="true"></i> Learning gap summary</a>
             <a class="btn btn-outline-light" href="<?= $records_url; ?>"><i class="mdi mdi-format-list-bulleted" aria-hidden="true"></i> View records</a>
+            <a class="btn btn-light" href="<?= base_url('Pages/regional_phil_iri_report'); ?>"><i class="mdi mdi-book-open-page-variant" aria-hidden="true"></i> Phil-IRI report</a>
+            <a class="btn btn-outline-light" href="<?= base_url('Pages/regional_crla_report'); ?>"><i class="mdi mdi-book-open-variant" aria-hidden="true"></i> CRLA report</a>
         </div>
     </header>
 
     <div class="rd-metrics">
-        <a class="rd-metric" href="<?= $school_summary_url; ?>">
+        <a class="rd-metric" href="<?= $records_url; ?>">
             <span class="rd-metric-top">
-                <span class="rd-metric-label">Reporting schools</span>
-                <span class="rd-metric-icon"><i class="mdi mdi-school-outline" aria-hidden="true"></i></span>
+                <span class="rd-metric-label">Reporting divisions</span>
+                <span class="rd-metric-icon"><i class="mdi mdi-office-building" aria-hidden="true"></i></span>
             </span>
-            <strong class="rd-metric-value rd-num"><?= number_format($reporting_school_count); ?></strong>
-            <small class="rd-metric-note">
-                <?= $network_schools > 0
-                    ? number_format($school_coverage, 1) . '% of ' . number_format($network_schools) . ' registered schools'
-                    : 'Schools with at least one submission'; ?>
-            </small>
+            <strong class="rd-metric-value rd-num"><?= number_format($divisions_reporting); ?></strong>
+            <small class="rd-metric-note"><?= number_format($reporting_rate, 1); ?>% of divisions have an encoded summary</small>
         </a>
         <a class="rd-metric" href="<?= $records_url; ?>">
             <span class="rd-metric-top">
@@ -182,7 +175,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
                                     <span class="rd-priority-rank"><?= $index + 1; ?></span>
                                     <span class="rd-priority-name">
                                         <a href="<?= $records_url; ?>?division_id=<?= (int) $row->division_id; ?>"><?= html_escape($row->division_name); ?></a>
-                                        <small><?= number_format((int) $row->school_count); ?> reporting school<?= (int) $row->school_count === 1 ? '' : 's'; ?> · <?= number_format((int) $row->record_count); ?> record<?= (int) $row->record_count === 1 ? '' : 's'; ?></small>
+                                        <small><?= (int) $row->record_count > 0 ? 'Division summary entered' : 'No division summary'; ?> · <?= number_format((int) $row->record_count); ?> record<?= (int) $row->record_count === 1 ? '' : 's'; ?></small>
                                     </span>
                                     <span class="rd-priority-value">
                                         <strong class="rd-num"><?= number_format((int) $row->learners_with_gap); ?></strong>
@@ -217,7 +210,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
         <div class="rd-card-head">
             <h2 id="rd-theme-title">Automated thematic analysis</h2>
             <span class="rd-tag"><i class="mdi mdi-auto-fix" aria-hidden="true"></i> Language-rule assisted</span>
-            <p>Recurring themes detected in the intervention and remarks text that schools submitted with their records.</p>
+            <p>Recurring themes detected in the division summary's intervention and remarks text.</p>
         </div>
         <div class="rd-card-body">
             <?php if (empty($thematic_analysis['themes'])) : ?>
@@ -233,14 +226,14 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
                 ?>
                 <div class="rd-theme-facts">
                     <span><strong class="rd-num"><?= number_format((int) $thematic_analysis['source_count']); ?></strong> records analysed</span>
-                    <span><strong class="rd-num"><?= number_format((int) $thematic_analysis['school_count']); ?></strong> reporting schools</span>
+                    <span><strong class="rd-num"><?= number_format($reporting_division_count); ?></strong> reporting divisions</span>
                     <span><strong class="rd-num"><?= number_format(count($thematic_analysis['themes'])); ?></strong> leading themes</span>
                     <?php if ($unclassified > 0) : ?>
                         <span><strong class="rd-num"><?= number_format($unclassified); ?></strong> unmatched by any theme</span>
                     <?php endif; ?>
                 </div>
                 <p class="rd-insight">
-                    <strong>Key finding:</strong> the leading theme is <?= html_escape($leading_theme->theme); ?>, appearing in <?= number_format((int) $leading_theme->record_count); ?> submitted record<?= (int) $leading_theme->record_count === 1 ? '' : 's'; ?> across <?= number_format((int) $leading_theme->school_count); ?> school<?= (int) $leading_theme->school_count === 1 ? '' : 's'; ?>.<?php if (!empty($secondary_themes)) : ?> Other recurring priorities include <?= html_escape(implode(' and ', array_map(function ($theme) { return $theme->theme; }, $secondary_themes))); ?>.<?php endif; ?>
+                    <strong>Key finding:</strong> the leading theme is <?= html_escape($leading_theme->theme); ?>, appearing in <?= number_format((int) $leading_theme->record_count); ?> division summary record<?= (int) $leading_theme->record_count === 1 ? '' : 's'; ?>.<?php if (!empty($secondary_themes)) : ?> Other recurring priorities include <?= html_escape(implode(' and ', array_map(function ($theme) { return $theme->theme; }, $secondary_themes))); ?>.<?php endif; ?>
                 </p>
                 <div class="rd-themes">
                     <?php foreach ($thematic_analysis['themes'] as $theme) : ?>
@@ -251,7 +244,7 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
                                 <span class="rd-theme-count rd-num"><?= number_format((int) $theme->record_count); ?></span>
                             </div>
                             <div class="rd-theme-bar" aria-hidden="true"><span style="width:<?= min(100, max(0, $theme_width)); ?>%"></span></div>
-                            <div class="rd-theme-meta"><?= number_format((int) $theme->school_count); ?> school<?= (int) $theme->school_count === 1 ? '' : 's'; ?> · <?= number_format((int) $theme->intervention_count); ?> intervention mention<?= (int) $theme->intervention_count === 1 ? '' : 's'; ?> · <?= number_format((int) $theme->remarks_count); ?> remark mention<?= (int) $theme->remarks_count === 1 ? '' : 's'; ?></div>
+                            <div class="rd-theme-meta"><?= number_format((int) $theme->record_count); ?> summary record<?= (int) $theme->record_count === 1 ? '' : 's'; ?> · <?= number_format((int) $theme->intervention_count); ?> intervention mention<?= (int) $theme->intervention_count === 1 ? '' : 's'; ?> · <?= number_format((int) $theme->remarks_count); ?> remark mention<?= (int) $theme->remarks_count === 1 ? '' : 's'; ?></div>
                             <?php if (!empty($theme->examples)) : ?>
                                 <p class="rd-theme-quote">“<?= html_escape($theme->examples[0]); ?>”</p>
                             <?php endif; ?>
@@ -285,7 +278,6 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
                             <tr>
                                 <th class="rd-sort" data-type="text" scope="col">Division</th>
                                 <th class="rd-sort" data-type="number" scope="col">Status</th>
-                                <th class="rd-sort" data-type="number" scope="col">School submissions</th>
                                 <th class="rd-sort" data-type="number" scope="col">Records</th>
                                 <th class="rd-sort" data-type="number" scope="col">Assessed</th>
                                 <th class="rd-sort" data-type="number" scope="col">With gap</th>
@@ -300,8 +292,6 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
                                 $row_assessed = (int) $row->learners_assessed;
                                 $row_records = (int) $row->record_count;
                                 $row_gap_rate = $row_assessed > 0 ? ((int) $row->learners_with_gap / $row_assessed) * 100 : null;
-                                $row_school_total = (int) $row->total_school_count;
-                                $row_submission_rate = $row_school_total > 0 ? ((int) $row->school_count / $row_school_total) * 100 : 0;
                                 $row_performance = isset($performance_by_division[(int) $row->division_id])
                                     ? $performance_by_division[(int) $row->division_id]
                                     : null;
@@ -315,10 +305,6 @@ $school_coverage = $network_schools > 0 ? ($reporting_school_count / $network_sc
                                     </td>
                                     <td data-sort="<?= $row_records > 0 ? 1 : 0; ?>">
                                         <span class="rd-pill<?= $row_records > 0 ? '' : ' rd-pill-muted'; ?>"><?= $row_records > 0 ? 'Reporting' : 'No records'; ?></span>
-                                    </td>
-                                    <td data-sort="<?= $row_submission_rate; ?>">
-                                        <a class="rd-num" href="<?= $record_link; ?>"><?= number_format((int) $row->school_count); ?> / <?= number_format($row_school_total); ?></a>
-                                        <span class="rd-sub rd-num"><?= number_format($row_submission_rate, 1); ?>% submitted</span>
                                     </td>
                                     <td class="rd-num" data-sort="<?= $row_records; ?>"><a href="<?= $record_link; ?>"><?= number_format($row_records); ?></a></td>
                                     <td class="rd-num" data-sort="<?= $row_assessed; ?>"><?= number_format($row_assessed); ?></td>

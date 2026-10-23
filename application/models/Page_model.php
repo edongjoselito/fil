@@ -5,6 +5,8 @@ class Page_model extends CI_Model{
 
     private $learning_gap_archive_schema_ready = false;
     private $password_change_schema_ready = false;
+    private $phil_iri_schema_ready = false;
+    private $crla_schema_ready = false;
 
     public function __construct(){
         $this->load->database();
@@ -430,6 +432,7 @@ public function login(){
     $login_input = trim((string) $this->input->post('username', true));
     
     $this->db->where('virified', 0);
+    $this->db->where_in('position', array('admin', 'region', 'division', 'division_head', 'ict'));
     $this->db->group_start();
     $this->db->where('username', $login_input);
     $this->db->or_where('email', $login_input);
@@ -456,6 +459,7 @@ public function lock_screen(){
     $password = $this->input->post('password');
     
     $this->db->where('username', $this->session->username);
+    $this->db->where_in('position', array('admin', 'region', 'division', 'division_head', 'ict'));
     //$this->db->where('status', 0);
     //$this->db->where('Password', $this->input->post('Password', true));
     $result = $this->db->get('users');
@@ -1008,18 +1012,12 @@ public function division_schools_by_sgc_status($division_id, $sgc_status){
         ->result();
 }
 
-public function division_account_overview($division_id){
+public function division_directory_overview($division_id){
     $schools = $this->db
-        ->select('schoolName, district_id, schoolID, schoolType, recID, division_id')
+        ->select('schoolName, district_id, schoolID, recID')
         ->where('division_id', $division_id)
         ->order_by('schoolName', 'ASC')
         ->get('schools')
-        ->result();
-
-    $users = $this->db
-        ->select('id, username, position, d_id')
-        ->where('p_id', $division_id)
-        ->get('users')
         ->result();
 
     $schools_by_district = array();
@@ -1027,26 +1025,8 @@ public function division_account_overview($division_id){
         $schools_by_district[(string) $school->district_id][] = $school;
     }
 
-    $school_usernames = array();
-    $school_account_ids = array();
-    $district_user_counts = array();
-    foreach ($users as $user) {
-        $school_usernames[(string) $user->username] = true;
-        $school_account_ids[(string) $user->username] = (int) $user->id;
-
-        if ($user->position === 'district') {
-            $district_id = (string) $user->d_id;
-            $district_user_counts[$district_id] = isset($district_user_counts[$district_id])
-                ? $district_user_counts[$district_id] + 1
-                : 1;
-        }
-    }
-
     return array(
         'schools_by_district' => $schools_by_district,
-        'school_usernames' => $school_usernames,
-        'school_account_ids' => $school_account_ids,
-        'district_user_counts' => $district_user_counts,
         'school_count' => count($schools)
     );
 }
@@ -2143,9 +2123,12 @@ private function apply_learning_gap_scope($scope, $alias = 'lgr')
             show_error('Your account has no assigned district.', 403);
             return;
         }
-        $scope = array('type' => 'district', 'id' => $district_id);
+        $scope = array_merge($scope, array('type' => 'district', 'id' => $district_id));
     }
     $prefix = $alias === '' ? '' : $alias . '.';
+    if (!empty($scope['learning_area'])) {
+        $this->db->where($prefix . 'learning_area', $scope['learning_area']);
+    }
     if ($scope['type'] === 'school') {
         $this->db->where($prefix . 'school_id', $scope['id']);
     } elseif ($scope['type'] === 'district') {
@@ -2160,8 +2143,10 @@ private function apply_learning_gap_scope($scope, $alias = 'lgr')
         );
     } elseif ($scope['type'] === 'division') {
         $this->db->where($prefix . 'division_id', $scope['id']);
+        $this->db->where("LEFT({$prefix}school_id, 12) = '__division__'", null, false);
     } elseif ($scope['type'] === 'region' && (int) $scope['id'] > 0) {
         $this->db->where($prefix . 'region_id', $scope['id']);
+        $this->db->where("LEFT({$prefix}school_id, 12) = '__division__'", null, false);
     }
 }
 
@@ -2196,7 +2181,7 @@ public function learning_gap_school_competency_summary($scope, $grade = '')
 {
     $competencies = array();
     $grades = array();
-    $school_ids = array();
+    $division_ids = array();
     foreach ($this->learning_gap_records($scope) as $record) {
         $record_grade = trim((string) $record->grade_level);
         if ($record_grade !== '') $grades[$record_grade] = $record_grade;
@@ -2207,28 +2192,27 @@ public function learning_gap_school_competency_summary($scope, $grade = '')
             $key = json_encode(array($record_grade, trim((string) $record->learning_area), $text));
             if (!isset($competencies[$key])) {
                 $competencies[$key] = array('text' => $text, 'grade' => $record_grade,
-                    'area' => $record->learning_area, 'schools' => array());
+                    'area' => $record->learning_area, 'division_ids' => array());
             }
-            // One school contributes one count, even across repeated records or trimesters.
-            $school_id = (string) $record->school_id;
-            $competencies[$key]['schools'][$school_id] = true;
-            $school_ids[$school_id] = true;
+            $division_id = (int) $record->division_id;
+            $competencies[$key]['division_ids'][$division_id] = true;
+            $division_ids[$division_id] = true;
         }
     }
     foreach ($competencies as &$competency) {
-        $competency['school_count'] = count($competency['schools']);
-        unset($competency['schools']);
+        $competency['division_count'] = count($competency['division_ids']);
+        unset($competency['division_ids']);
     }
     unset($competency);
     $competencies = array_values($competencies);
     usort($competencies, function ($a, $b) {
-        return $b['school_count'] <=> $a['school_count']
+        return $b['division_count'] <=> $a['division_count']
             ?: strnatcasecmp($a['grade'], $b['grade'])
             ?: strnatcasecmp($a['text'], $b['text']);
     });
     natcasesort($grades);
     return array('competency_rows' => $competencies, 'grade_options' => array_values($grades),
-        'reporting_school_count' => count($school_ids));
+        'reporting_division_count' => count($division_ids));
 }
 
 public function learning_gap_summary($scope)
@@ -2489,6 +2473,7 @@ public function learning_gap_division_performance($region_id)
         ->select('division_id, school_id, grade_level, learners_assessed, learners_with_gap, class_proficiency_level')
         ->where('region_id', (int) $region_id)
         ->where('fiscal_year', $this->learning_gap_year())
+        ->where("LEFT(school_id, 12) = '__division__'", null, false)
         ->get('learning_gap_records')
         ->result();
     foreach ($records as $record) {
@@ -2520,12 +2505,14 @@ public function learning_gap_division_performance($region_id)
     return array_values($rows);
 }
 
-public function learning_gap_division_summary($region_id)
+public function learning_gap_division_summary($region_id, $learning_area = '')
 {
     $this->ensure_learning_gap_archive_schema();
     $this->db->select('d.id AS division_id, d.description AS division_name, COUNT(lgr.id) AS record_count, COUNT(DISTINCT lgr.school_id) AS school_count, (SELECT COUNT(*) FROM schools school_totals WHERE school_totals.division_id = d.id) AS total_school_count, COALESCE(SUM(lgr.learners_assessed), 0) AS learners_assessed, COALESCE(SUM(lgr.learners_with_gap), 0) AS learners_with_gap')
         ->from('division d')
-        ->join('learning_gap_records lgr', 'lgr.division_id = d.id AND lgr.fiscal_year = ' . (int) $this->learning_gap_year(), 'left')
+        ->join('learning_gap_records lgr', "lgr.division_id = d.id AND lgr.fiscal_year = " . (int) $this->learning_gap_year()
+            . " AND LEFT(lgr.school_id, 12) = '__division__'"
+            . ($learning_area !== '' ? ' AND lgr.learning_area = ' . $this->db->escape($learning_area) : ''), 'left')
         ->where('d.region_id', (int) $region_id)
         ->group_by('d.id, d.description')
         ->order_by('learners_with_gap', 'DESC');
@@ -2543,6 +2530,7 @@ public function learning_gap_competency_ranking($division_id, $learning_area = '
     $records = $this->db->select('id, school_id, grade_level, learning_area, term, least_learned_competency')
         ->where('division_id', (int) $division_id)
         ->where('fiscal_year', $this->learning_gap_year())
+        ->where("LEFT(school_id, 12) = '__division__'", null, false)
         ->get('learning_gap_records')->result();
     $ranked = array();
 
@@ -2633,22 +2621,36 @@ public function learning_gap_school_submission_summary($division_id)
         ->result();
 }
 
-public function save_learning_gap_record($school_id)
+public function save_learning_gap_record($school_id, $division_summary_id = null)
 {
     $this->ensure_learning_gap_proficiency_columns();
     $this->ensure_learning_gap_archive_schema();
     $this->ensure_learning_gap_summative_schema();
-    $school = $this->Common->one_cond_row('schools', 'schoolID', $school_id);
-    if (!$school) {
-        return false;
+    if ($division_summary_id !== null) {
+        $division = $this->Common->one_cond_row('division', 'id', (int) $division_summary_id);
+        if (!$division) {
+            return false;
+        }
+        $region_id = (int) $division->region_id;
+        $division_id = (int) $division->id;
+        $district_id = 0;
+        $summative_enabled = false;
+        $school_id = '__division__' . $division_id;
+    } else {
+        $school = $this->Common->one_cond_row('schools', 'schoolID', $school_id);
+        if (!$school) {
+            return false;
+        }
+        $region_id = (int) $school->region_id;
+        $division_id = (int) $school->division_id;
+        $district_id = (int) $school->district_id;
+        $summative_enabled = (int) $school->cpl_summative_enabled === 1;
     }
     $assessed = (int) $this->input->post('learners_assessed', true);
     $with_gap = (int) $this->input->post('learners_with_gap', true);
     $class_proficiency_level = trim((string) $this->input->post('class_proficiency_level', true));
     $proficiency_level = trim((string) $this->input->post('proficiency_level', true));
-    // Summative CPL columns are only written while the school has the feature
-    // enabled; disabling the feature never wipes values already encoded.
-    $summative_enabled = (int) $school->cpl_summative_enabled === 1;
+    // Summative CPL columns remain supported for legacy school records.
     $cpl_summative_1 = trim((string) $this->input->post('cpl_summative_1', true));
     $cpl_summative_2 = trim((string) $this->input->post('cpl_summative_2', true));
     $selected_competencies = $this->input->post('least_learned_competency', true);
@@ -2657,9 +2659,9 @@ public function save_learning_gap_record($school_id)
         : trim((string) $selected_competencies);
     $data = array(
         'school_id' => $school_id,
-        'region_id' => (int) $school->region_id,
-        'division_id' => (int) $school->division_id,
-        'district_id' => (int) $school->district_id,
+        'region_id' => $region_id,
+        'division_id' => $division_id,
+        'district_id' => $district_id,
         'fiscal_year' => $this->learning_gap_year(),
         'grade_level' => $this->input->post('grade_level', true),
         'learning_area' => $this->input->post('learning_area', true),
@@ -2823,6 +2825,308 @@ public function regional_divisions($region_id)
 {
     return $this->db->where('region_id', (int) $region_id)
         ->order_by('description', 'ASC')->get('division')->result();
+}
+
+public function phil_iri_records($division_id, $school_year)
+{
+    $this->ensure_phil_iri_schema();
+    return $this->db->where('division_id', (int) $division_id)
+        ->where("LEFT(school_id, 12) = '__division__'", null, false)
+        ->where('school_year', (int) $school_year)
+        ->order_by('grade_level')->order_by('language')->order_by('assessment_period')
+        ->get('phil_iri_records')->result();
+}
+
+public function phil_iri_default_sy($division_id, $fallback_year)
+{
+    $this->ensure_phil_iri_schema();
+    $row = $this->db->where('division_id', (int) $division_id)->get('phil_iri_settings')->row();
+    return $row ? (int) $row->default_school_year : (int) $fallback_year;
+}
+
+public function set_phil_iri_default_sy($division_id, $school_year)
+{
+    $this->ensure_phil_iri_schema();
+    $division_id = (int) $division_id;
+    $scope_key = '__division__' . $division_id;
+    $data = array(
+        'school_id' => $scope_key,
+        'division_id' => $division_id,
+        'default_school_year' => (int) $school_year,
+        'updated_at' => date('Y-m-d H:i:s'),
+    );
+    $existing = $this->db->where('division_id', $division_id)->get('phil_iri_settings')->row();
+    if ($existing) {
+        return $this->db->where('division_id', $division_id)->update('phil_iri_settings', $data);
+    }
+    return $this->db->insert('phil_iri_settings', $data);
+}
+
+public function regional_phil_iri_records($region_id, $school_year, $division_id = 0, $grades = array(4, 5, 6, 7, 8, 9, 10))
+{
+    $this->ensure_phil_iri_schema();
+    $this->db->select('pir.*, d.description AS division_name')
+        ->from('phil_iri_records pir')
+        ->join('division d', 'd.id = pir.division_id')
+        ->where("LEFT(pir.school_id, 12) = '__division__'", null, false)
+        ->where('d.region_id', (int) $region_id)
+        ->where('pir.school_year', (int) $school_year)
+        ->where_in('pir.grade_level', $grades)
+        ->order_by('d.description')
+        ->order_by('pir.grade_level')->order_by('pir.language')->order_by('pir.assessment_period');
+    if ((int) $division_id > 0) {
+        $this->db->where('pir.division_id', (int) $division_id);
+    }
+    return $this->db->get()->result();
+}
+
+public function regional_phil_iri_division_count($region_id, $division_id = 0)
+{
+    $this->db->from('division d')->where('d.region_id', (int) $region_id);
+    if ((int) $division_id > 0) {
+        $this->db->where('d.id', (int) $division_id);
+    }
+    return (int) $this->db->count_all_results();
+}
+
+public function save_phil_iri($division_id, $school_year)
+{
+    $this->ensure_phil_iri_schema();
+    $division_id = (int) $division_id;
+    $school_id = '__division__' . $division_id;
+    $grade = (int) $this->input->post('grade_level');
+    $language = (string) $this->input->post('language', true);
+    $period = (string) $this->input->post('assessment_period', true);
+    $data = array(
+        'school_id' => $school_id,
+        'division_id' => $division_id,
+        'school_year' => (int) $school_year,
+        'grade_level' => $grade,
+        'language' => $language,
+        'assessment_period' => $period,
+        'learners_assessed' => (int) $this->input->post('learners_assessed'),
+        'independent' => (int) $this->input->post('independent'),
+        'instructional' => (int) $this->input->post('instructional'),
+        'frustration' => (int) $this->input->post('frustration'),
+        'non_reader' => (int) $this->input->post('non_reader'),
+        'updated_at' => date('Y-m-d H:i:s'),
+    );
+    $key = array(
+        'school_id' => $school_id,
+        'division_id' => $division_id,
+        'school_year' => (int) $school_year,
+        'grade_level' => $grade,
+        'language' => $language,
+        'assessment_period' => $period,
+    );
+    $existing = $this->db->where($key)->get('phil_iri_records')->row();
+    if ($existing) {
+        return $this->db->where('id', (int) $existing->id)->update('phil_iri_records', $data);
+    }
+    $data['created_at'] = date('Y-m-d H:i:s');
+    return $this->db->insert('phil_iri_records', $data);
+}
+
+private function ensure_phil_iri_schema()
+{
+    if ($this->phil_iri_schema_ready) {
+        return;
+    }
+    $this->db->query("CREATE TABLE IF NOT EXISTS phil_iri_settings (
+        school_id VARCHAR(50) NOT NULL PRIMARY KEY,
+        division_id INT NULL,
+        default_school_year INT NOT NULL,
+        updated_at DATETIME NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $this->db->query("CREATE TABLE IF NOT EXISTS phil_iri_records (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        school_id VARCHAR(50) NOT NULL,
+        division_id INT NULL,
+        school_year INT NOT NULL,
+        grade_level TINYINT NOT NULL,
+        language VARCHAR(20) NOT NULL,
+        assessment_period VARCHAR(20) NOT NULL,
+        learners_assessed INT NOT NULL DEFAULT 0,
+        independent INT NOT NULL DEFAULT 0,
+        instructional INT NOT NULL DEFAULT 0,
+        frustration INT NOT NULL DEFAULT 0,
+        non_reader INT NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL,
+        updated_at DATETIME NOT NULL,
+        UNIQUE KEY uq_phil_iri_entry (school_id, school_year, grade_level, language, assessment_period),
+        KEY idx_phil_iri_year_school (school_year, school_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    if (!$this->db->field_exists('division_id', 'phil_iri_settings')) {
+        $this->db->query('ALTER TABLE phil_iri_settings ADD division_id INT NULL');
+    }
+    if (!$this->db->field_exists('division_id', 'phil_iri_records')) {
+        $this->db->query('ALTER TABLE phil_iri_records ADD division_id INT NULL');
+    }
+    $migration = '20261004_phil_iri_division_scope';
+    if ($this->db->where('migration', $migration)->count_all_results('app_schema_migrations') === 0) {
+        if ($this->db->query('UPDATE phil_iri_records r JOIN schools s ON s.schoolID = r.school_id SET r.division_id = s.division_id WHERE r.division_id IS NULL')) {
+            $this->db->query('INSERT IGNORE INTO app_schema_migrations (migration) VALUES (?)', array($migration));
+        } else {
+            log_message('error', 'Phil-IRI division-scope backfill failed; it will be retried on the next request.');
+        }
+    }
+    $this->phil_iri_schema_ready = true;
+}
+
+public function crla_records($division_id, $school_year)
+{
+    $this->ensure_crla_schema();
+    return $this->db->where('division_id', (int) $division_id)
+        ->where("LEFT(school_id, 12) = '__division__'", null, false)
+        ->where('school_year', (int) $school_year)
+        ->order_by('grade_level')->order_by('language')->order_by('assessment_period')
+        ->get('crla_records')->result();
+}
+
+public function crla_default_sy($division_id, $fallback_year)
+{
+    $this->ensure_crla_schema();
+    $row = $this->db->where('division_id', (int) $division_id)->get('crla_settings')->row();
+    return $row ? (int) $row->default_school_year : (int) $fallback_year;
+}
+
+public function set_crla_default_sy($division_id, $school_year)
+{
+    $this->ensure_crla_schema();
+    $division_id = (int) $division_id;
+    $scope_key = '__division__' . $division_id;
+    $data = array(
+        'school_id' => $scope_key,
+        'division_id' => $division_id,
+        'default_school_year' => (int) $school_year,
+        'updated_at' => date('Y-m-d H:i:s'),
+    );
+    $existing = $this->db->where('division_id', $division_id)->get('crla_settings')->row();
+    if ($existing) {
+        return $this->db->where('division_id', $division_id)->update('crla_settings', $data);
+    }
+    return $this->db->insert('crla_settings', $data);
+}
+
+public function regional_crla_records($region_id, $school_year, $division_id = 0, $filters = array())
+{
+    $this->ensure_crla_schema();
+    $this->db->select('cr.*, d.description AS division_name')
+        ->from('crla_records cr')
+        ->join('division d', 'd.id = cr.division_id')
+        ->where("LEFT(cr.school_id, 12) = '__division__'", null, false)
+        ->where('d.region_id', (int) $region_id)
+        ->where('cr.school_year', (int) $school_year)
+        ->order_by('d.description')
+        ->order_by('cr.grade_level')->order_by('cr.language')->order_by('cr.assessment_period');
+    if ((int) $division_id > 0) {
+        $this->db->where('cr.division_id', (int) $division_id);
+    }
+    if (!empty($filters['assessment_period'])) {
+        $this->db->where('cr.assessment_period', $filters['assessment_period']);
+    }
+    if (!empty($filters['grade_level'])) {
+        $this->db->where('cr.grade_level', (int) $filters['grade_level']);
+    }
+    if (!empty($filters['language'])) {
+        $this->db->where('cr.language', $filters['language']);
+    }
+    return $this->db->get()->result();
+}
+
+public function regional_crla_division_count($region_id, $division_id = 0)
+{
+    $this->db->from('division d')->where('d.region_id', (int) $region_id);
+    if ((int) $division_id > 0) {
+        $this->db->where('d.id', (int) $division_id);
+    }
+    return (int) $this->db->count_all_results();
+}
+
+public function save_crla($division_id, $school_year)
+{
+    $this->ensure_crla_schema();
+    $division_id = (int) $division_id;
+    $school_id = '__division__' . $division_id;
+    $grade = (int) $this->input->post('grade_level');
+    $language = (string) $this->input->post('language', true);
+    $period = (string) $this->input->post('assessment_period', true);
+    $data = array(
+        'school_id' => $school_id,
+        'division_id' => $division_id,
+        'school_year' => (int) $school_year,
+        'grade_level' => $grade,
+        'language' => $language,
+        'assessment_period' => $period,
+        'learners_assessed' => (int) $this->input->post('learners_assessed'),
+        'low_emerging' => (int) $this->input->post('low_emerging'),
+        'high_emerging' => (int) $this->input->post('high_emerging'),
+        'developing' => (int) $this->input->post('developing'),
+        'transitioning' => (int) $this->input->post('transitioning'),
+        'at_grade_level' => (int) $this->input->post('at_grade_level'),
+        'updated_at' => date('Y-m-d H:i:s'),
+    );
+    $key = array(
+        'school_id' => $school_id,
+        'division_id' => $division_id,
+        'school_year' => (int) $school_year,
+        'grade_level' => $grade,
+        'language' => $language,
+        'assessment_period' => $period,
+    );
+    $existing = $this->db->where($key)->get('crla_records')->row();
+    if ($existing) {
+        return $this->db->where('id', (int) $existing->id)->update('crla_records', $data);
+    }
+    $data['created_at'] = date('Y-m-d H:i:s');
+    return $this->db->insert('crla_records', $data);
+}
+
+private function ensure_crla_schema()
+{
+    if ($this->crla_schema_ready) {
+        return;
+    }
+    $this->db->query("CREATE TABLE IF NOT EXISTS crla_settings (
+        school_id VARCHAR(50) NOT NULL PRIMARY KEY,
+        division_id INT NULL,
+        default_school_year INT NOT NULL,
+        updated_at DATETIME NOT NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $this->db->query("CREATE TABLE IF NOT EXISTS crla_records (
+        id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+        school_id VARCHAR(50) NOT NULL,
+        division_id INT NULL,
+        school_year INT NOT NULL,
+        grade_level TINYINT NOT NULL,
+        language VARCHAR(40) NOT NULL,
+        assessment_period VARCHAR(10) NOT NULL,
+        learners_assessed INT NOT NULL DEFAULT 0,
+        low_emerging INT NOT NULL DEFAULT 0,
+        high_emerging INT NOT NULL DEFAULT 0,
+        developing INT NOT NULL DEFAULT 0,
+        transitioning INT NOT NULL DEFAULT 0,
+        at_grade_level INT NOT NULL DEFAULT 0,
+        created_at DATETIME NOT NULL,
+        updated_at DATETIME NOT NULL,
+        UNIQUE KEY uq_crla_entry (school_id, school_year, grade_level, language, assessment_period),
+        KEY idx_crla_year_school (school_year, school_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    if (!$this->db->field_exists('division_id', 'crla_settings')) {
+        $this->db->query('ALTER TABLE crla_settings ADD division_id INT NULL');
+    }
+    if (!$this->db->field_exists('division_id', 'crla_records')) {
+        $this->db->query('ALTER TABLE crla_records ADD division_id INT NULL');
+    }
+    $migration = '20261004_crla_division_scope';
+    if ($this->db->where('migration', $migration)->count_all_results('app_schema_migrations') === 0) {
+        if ($this->db->query('UPDATE crla_records r JOIN schools s ON s.schoolID = r.school_id SET r.division_id = s.division_id WHERE r.division_id IS NULL')) {
+            $this->db->query('INSERT IGNORE INTO app_schema_migrations (migration) VALUES (?)', array($migration));
+        } else {
+            log_message('error', 'CRLA division-scope backfill failed; it will be retried on the next request.');
+        }
+    }
+    $this->crla_schema_ready = true;
 }
 
 public function add_learning_area_setting($division_id)

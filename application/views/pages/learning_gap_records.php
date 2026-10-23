@@ -48,13 +48,13 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
             <p class="rec-header-meta">
                 <span>Review assessment results and the actions taken against them</span>
                 <span class="rec-num">Fiscal Year <?= (int) $record_year; ?></span>
-                <?php if (!$is_school) : ?><span class="rec-num"><?= number_format($breadth_count); ?> school<?= $breadth_count === 1 ? '' : 's'; ?></span><?php endif; ?>
+                <?php if (!$is_school) : ?><span class="rec-num"><?= number_format($breadth_count); ?> reporting unit<?= $breadth_count === 1 ? '' : 's'; ?></span><?php endif; ?>
             </p>
         </div>
         <div class="rec-header-actions">
             <a class="btn btn-outline-light" href="<?= base_url('Pages/learning_gap'); ?>"><i class="mdi mdi-chart-bar" aria-hidden="true"></i> Learning gap summary</a>
             <a class="btn btn-outline-light" href="<?= base_url('Pages/learning_gap_archives'); ?>"><i class="mdi mdi-archive-outline" aria-hidden="true"></i> Yearly archives</a>
-            <?php if ($is_school && !$is_archive_year) : ?>
+            <?php if (!empty($is_division_user) && !$is_archive_year) : ?>
                 <a class="btn btn-light" href="<?= base_url('Pages/learning_gap_entry'); ?>"><i class="mdi mdi-plus" aria-hidden="true"></i> Data entry</a>
             <?php endif; ?>
         </div>
@@ -74,9 +74,9 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
             <small class="rec-metric-note"><?= $has_record_filters ? 'Matching your filters' : 'All records in your scope'; ?></small>
         </div>
         <div class="rec-metric">
-            <span class="rec-metric-label"><?= $is_school ? 'Grade and area pairs' : 'Reporting schools'; ?></span>
+            <span class="rec-metric-label"><?= $is_school ? 'Grade and area pairs' : 'Reporting units'; ?></span>
             <strong class="rec-metric-value rec-num"><?= number_format($breadth_count); ?></strong>
-            <small class="rec-metric-note"><?= $is_school ? 'Distinct submissions on file' : 'Schools represented below'; ?></small>
+            <small class="rec-metric-note"><?= $is_school ? 'Distinct submissions on file' : 'Division summaries and legacy school submissions'; ?></small>
         </div>
         <div class="rec-metric">
             <span class="rec-metric-label">Learners assessed</span>
@@ -175,13 +175,15 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
                     $assessed = (int) $row->learners_assessed;
                     $with_gap = (int) $row->learners_with_gap;
                     $competencies = $competency_items($row->least_learned_competency);
-                    $context = ($is_school ? '' : $row->schoolName . ', ') . $row->grade_level . ', ' . $row->learning_area . ', ' . $row->term;
+                    $is_division_summary = strpos((string) $row->school_id, '__division__') === 0;
+                    $record_label = $is_division_summary ? 'Division summary' : (string) $row->schoolName;
+                    $context = ($is_school ? '' : $record_label . ', ') . $row->grade_level . ', ' . $row->learning_area . ', ' . $row->term;
                     ?>
                     <li class="rec-item">
                         <div class="rec-item-main">
                             <div class="rec-identity">
                                 <?php if (!$is_school) : ?>
-                                    <strong><?= html_escape($row->schoolName); ?></strong>
+                                    <strong><?= html_escape($record_label); ?></strong>
                                     <span><?= html_escape($row->division_name); ?> · <?= html_escape($row->grade_level); ?> · <?= html_escape($row->learning_area); ?> · <?= html_escape($row->term); ?></span>
                                 <?php else : ?>
                                     <strong><?= html_escape($row->grade_level); ?> · <?= html_escape($row->learning_area); ?></strong>
@@ -250,7 +252,7 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
                                     </div>
                                 <?php endforeach; ?>
                             </div>
-                            <?php if ($is_school && !$is_archive_year) : ?>
+                            <?php if (!empty($is_division_user) && $is_division_summary && !$is_archive_year) : ?>
                                 <div class="rec-actions">
                                     <a class="btn btn-sm btn-outline-primary" href="<?= base_url('Pages/learning_gap_entry?edit=' . (int) $row->id); ?>"><i class="mdi mdi-pencil" aria-hidden="true"></i> Edit record</a>
                                     <?= form_open('Pages/learning_gap_delete', array('onsubmit' => "return confirm('Remove this record?');")); ?>

@@ -1,3 +1,10 @@
+<?php
+$school_can_access_crla = false;
+if ((string) $this->session->position === 'school') {
+    $menu_school = $this->Page_model->one_cond_row('schools', 'schoolID', (string) $this->session->username);
+    $school_can_access_crla = $menu_school && in_array((int) $menu_school->category, array(1, 2, 3), true);
+}
+?>
 <body>
 
     <!-- Begin page -->
@@ -258,7 +265,7 @@
                         <?php if ($this->session->position == 'district') { ?>
                             <li><a href="<?= base_url(); ?>pages/schools_district/<?= $this->session->district; ?>" class="waves-effect"><i class="fas fa-school"></i><span>Schools</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Filipino Learning Overview</span></a></li>
-                            <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="fas fa-school"></i><span> Filipino Learning Summary</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="mdi mdi-format-list-bulleted"></i><span> Competency Summary</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Filipino Learning Records</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>
                             <li><a href="<?= base_url(); ?>pages/userlist" class="waves-effect"><i class="mdi mdi-account-supervisor"></i><span> Manage Users </span></a></li>
@@ -268,6 +275,8 @@
                         <?php if ($this->session->position == 'school') { ?>
 
                             <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Filipino Learning Monitoring</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/phil_iri" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI Data Entry</span></a></li>
+                            <?php if ($school_can_access_crla): ?><li><a href="<?= base_url(); ?>Pages/crla" class="waves-effect"><i class="mdi mdi-book-open-variant"></i><span> CRLA Data Entry</span></a></li><?php endif; ?>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> My Filipino Learning Records</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>
 
@@ -279,10 +288,13 @@
                             <li>
                                 <a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Filipino Learning Overview</span></a>
                             </li>
-                            <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="fas fa-school"></i><span> Filipino Learning Summary</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="mdi mdi-format-list-bulleted"></i><span> Competency Summary</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Filipino Learning Records</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>
-                            <li><a href="<?= base_url(); ?>Pages/school_submission_monitoring" class="waves-effect"><i class="mdi mdi-clipboard-check-outline"></i><span> School Submissions</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/phil_iri" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI Division Entry</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/crla" class="waves-effect"><i class="mdi mdi-book-open-variant"></i><span> CRLA Division Entry</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_phil_iri_report" class="waves-effect"><i class="mdi mdi-chart-bar"></i><span> Phil-IRI Report</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_crla_report" class="waves-effect"><i class="mdi mdi-chart-bar"></i><span> CRLA Report</span></a></li>
                             <li>
                                 <a href="javascript: void(0);" class="waves-effect">
                                     <i class="fas fa-cogs"></i>
@@ -290,7 +302,7 @@
                                     <span class="menu-arrow"></span>
                                 </a>
                                 <ul class="nav-second-level" aria-expanded="false">
-                                    <li><a href="<?= base_url(); ?>pages/district_account/<?= $this->session->division; ?>">Districts</a></li>
+                                    <li><a href="<?= base_url(); ?>pages/district_account/<?= $this->session->division; ?>">District &amp; School Directory</a></li>
                                     <li><a href="<?= base_url(); ?>pages/schools_division/<?= $this->session->division; ?>">Manage Schools</a></li>
                                     <li><a href="<?= base_url(); ?>Pages/division_setup">Division Setup</a></li>
                                 </ul>
@@ -304,9 +316,13 @@
                             <!-- <li><a href="<?= base_url(); ?>pages/schools_division/<?= $this->session->division; ?>" class="waves-effect"><i class="fas fa-school"></i><span>Schools</span></a></li> -->
                             
                             <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Filipino Learning Overview</span></a></li>
-                            <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="fas fa-school"></i><span> Filipino Learning Summary</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="mdi mdi-format-list-bulleted"></i><span> Competency Summary</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Filipino Learning Records</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/phil_iri" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI Division Entry</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/crla" class="waves-effect"><i class="mdi mdi-book-open-variant"></i><span> CRLA Division Entry</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_phil_iri_report" class="waves-effect"><i class="mdi mdi-chart-bar"></i><span> Phil-IRI Report</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_crla_report" class="waves-effect"><i class="mdi mdi-chart-bar"></i><span> CRLA Report</span></a></li>
                             <li><a href="#" class="waves-effect" data-toggle="modal" data-target="#renren"><i class="fas fa-lock"></i><span>Change Password</span></a></li>
 
                         <?php } ?>
@@ -314,9 +330,11 @@
                         <?php if ($this->session->position == 'region') { ?>
 
                             <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Filipino Learning Overview</span></a></li>
-                            <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="fas fa-school"></i><span> Filipino Learning Summary</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/learning_gap_school_summary" class="waves-effect"><i class="mdi mdi-format-list-bulleted"></i><span> Competency Summary</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_records" class="waves-effect"><i class="fas fa-list"></i><span> Filipino Learning Records</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_gap_archives" class="waves-effect"><i class="mdi mdi-archive"></i><span> Archived Records</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_phil_iri_report" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI Regional Report</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_crla_report" class="waves-effect"><i class="mdi mdi-book-open-variant"></i><span> CRLA Regional Report</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_area_setup" class="waves-effect"><i class="mdi mdi-tune"></i><span> Learning Area Setup</span></a></li>
                             <li><a href="#" class="waves-effect" data-toggle="modal" data-target="#renren"><i class="fas fa-lock"></i><span>Change Password</span></a></li>
 
@@ -340,6 +358,11 @@
 
                         <?php if ($this->session->position == 'ict') { ?>
                             <li><a href="<?= base_url(); ?>pages/schools/<?= $this->session->division; ?>" class="waves-effect"><i class="fas fa-school"></i><span>Schools</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/learning_gap" class="waves-effect"><i class="fas fa-chart-bar"></i><span> Filipino Learning Summary</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/phil_iri" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI Division Entry</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/crla" class="waves-effect"><i class="mdi mdi-book-open-variant"></i><span> CRLA Division Entry</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_phil_iri_report" class="waves-effect"><i class="mdi mdi-chart-bar"></i><span> Phil-IRI Report</span></a></li>
+                            <li><a href="<?= base_url(); ?>Pages/regional_crla_report" class="waves-effect"><i class="mdi mdi-chart-bar"></i><span> CRLA Report</span></a></li>
                             <li><a href="<?= base_url(); ?>pages/userlist_division" class="waves-effect"><i class="mdi mdi-account-supervisor"></i><span> Manage Users </span></a></li>
                         <?php } ?>
                     </ul>

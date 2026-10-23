@@ -10,22 +10,20 @@ $thematic_analysis = $this->Page_model->learning_gap_thematic_analysis($scope);
 $records_url = base_url('Pages/learning_gap_records');
 $overview_url = base_url('Pages/learning_gap');
 $record_count = (int) $summary->record_count;
-$school_count = (int) $summary->school_count;
+$division_reporting = (int) $summary->school_count > 0;
 $learners_assessed = (int) $summary->learners_assessed;
 $learners_with_gap = (int) $summary->learners_with_gap;
 $gap_rate = $learners_assessed > 0 ? ($learners_with_gap / $learners_assessed) * 100 : 0;
 $cpl_record_count = array_sum(array_map(function ($row) { return (int) $row->cpl_record_count; }, $term_performance));
 $theme_max_count = !empty($thematic_analysis['themes']) ? max(array_map(function ($theme) { return (int) $theme->record_count; }, $thematic_analysis['themes'])) : 0;
 $div_setup_name = isset($division) && !empty($division->description) ? html_escape($division->description) : '';
-$div_encoded_total = isset($encoded_total_schools) ? (int) $encoded_total_schools : 0;
-$div_registered = isset($registered_school_count) ? (int) $registered_school_count : 0;
-$div_signup_pct = isset($signup_percentage) ? (float) $signup_percentage : 0;
 $div_district_count = isset($district_count) ? (int) $district_count : 0;
 $div_fy = isset($this->session->fy) ? (int) $this->session->fy : (int) date('Y');
-$div_submission_url = base_url('Pages/school_submission_monitoring');
 $div_setup_url = base_url('Pages/division_setup');
 $div_districts_url = base_url('pages/district_account/' . (int) $this->session->division);
 $div_schools_url = base_url('pages/schools_division/' . (int) $this->session->division);
+$phil_iri_url = base_url('Pages/phil_iri');
+$crla_url = base_url('Pages/crla');
 
 $this->load->helper('learning_gap');
 $term_interp = lg_term_interpretation($term_performance, $record_count);
@@ -33,42 +31,22 @@ $term_interp = lg_term_interpretation($term_performance, $record_count);
 $theme_interp = array();
 if (!empty($thematic_analysis['themes'])) {
     $source_count = (int) $thematic_analysis['source_count'];
-    $theme_schools = (int) $thematic_analysis['school_count'];
+    $theme_divisions = (int) $thematic_analysis['school_count'];
     $lead = $thematic_analysis['themes'][0];
     $lead_records = (int) $lead->record_count;
-    $lead_schools = (int) $lead->school_count;
+    $lead_divisions = (int) $lead->school_count;
     if ($source_count > 0) {
         $theme_interp[] = '<strong>' . html_escape($lead->theme) . '</strong> appears in ' . number_format(($lead_records / $source_count) * 100, 1) . '% of analyzed records.';
     }
-    if ($lead_schools <= 1) {
-        $theme_interp[] = 'It comes from a single school, so it may reflect one school\'s situation rather than a division-wide pattern.';
-    } elseif ($theme_schools > 0 && $lead_schools / $theme_schools >= 0.5) {
-        $theme_interp[] = 'It is reported by ' . number_format($lead_schools) . ' of ' . number_format($theme_schools) . ' reporting schools, which points to a division-wide priority for technical assistance.';
+    if ($lead_divisions > 0 && $lead_divisions / $theme_divisions >= 0.5) {
+        $theme_interp[] = 'It is present in ' . number_format($lead_divisions) . ' of ' . number_format($theme_divisions) . ' reporting division summaries, which points to a division-wide priority for technical assistance.';
     } else {
-        $theme_interp[] = 'It is reported by ' . number_format($lead_schools) . ' of ' . number_format($theme_schools) . ' reporting schools, so support can be targeted to those schools first.';
+        $theme_interp[] = 'It appears in the encoded division summary and may help identify a priority for technical assistance.';
     }
     if ((int) $lead->intervention_count > (int) $lead->remarks_count) {
-        $theme_interp[] = 'Most mentions are under Intervention / Action, meaning schools are already acting on it; monitor whether these actions lower the gap rate.';
+        $theme_interp[] = 'Most mentions are under Intervention / Action; monitor whether the reported actions lower the gap rate.';
     } elseif ((int) $lead->remarks_count > (int) $lead->intervention_count) {
-        $theme_interp[] = 'Most mentions are under Remarks, meaning schools raise it as a concern more often than they report an action for it; this may need division guidance.';
-    }
-}
-
-$reg_interp = array();
-if ($div_encoded_total > 0) {
-    $reg_remaining = $div_encoded_total - $div_registered;
-    if ($reg_remaining < 0) {
-        $reg_interp[] = 'Registered schools exceed the encoded total by ' . number_format(-$reg_remaining) . '. Update the total number of schools in Division Setup.';
-    } elseif ($reg_remaining === 0) {
-        $reg_interp[] = 'All encoded schools are registered, so registration is complete.';
-    } else {
-        $reg_status = $div_signup_pct >= 90 ? 'Registration is nearly complete' : ($div_signup_pct >= 50 ? 'Registration is in progress' : 'Registration is still low');
-        $reg_interp[] = $reg_status . ': <strong>' . lg_count_label($reg_remaining, 'school') . '</strong> still need to register before their data can be included in division results.';
-    }
-    if ($div_registered > 0) {
-        $not_reporting = max(0, $div_registered - $school_count);
-        $reg_interp[] = number_format(min($school_count, $div_registered)) . ' of ' . lg_count_label($div_registered, 'registered school') . ' (' . number_format((min($school_count, $div_registered) / $div_registered) * 100, 1) . '%) ' . (min($school_count, $div_registered) === 1 ? 'has' : 'have') . ' submitted learning gap records for FY ' . $div_fy . '.'
-            . ($not_reporting > 0 ? ' Follow up with the remaining ' . number_format($not_reporting) . ' through School Submissions.' : '');
+        $theme_interp[] = 'Most mentions are under Remarks rather than Intervention / Action; this may need division guidance.';
     }
 }
 ?>
@@ -186,7 +164,7 @@ if ($div_encoded_total > 0) {
 <div class="scope-lg division-workspace">
     <section class="lg-hero"><div class="lg-hero-copy"><span class="lg-eyebrow">FILIPINO DATAHUB · Filipino Subject<?= $div_setup_name !== '' ? ' · ' . $div_setup_name : ''; ?></span><h1>Division Dashboard</h1><p>Review Filipino subject assessment results, learning competencies, and support needs across your division.</p><span class="lg-fy-badge"><i class="mdi mdi-calendar-month-outline"></i> Fiscal Year <?= html_escape($div_fy); ?></span></div><div class="lg-hero-actions"><a class="btn btn-light" href="<?= $overview_url; ?>"><i class="mdi mdi-chart-bar mr-1"></i> Filipino Learning Summary</a><a class="btn btn-outline-light" href="<?= $records_url; ?>"><i class="mdi mdi-format-list-bulleted mr-1"></i> Filipino Learning Records</a></div></section>
     <div class="row">
-        <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Reporting schools</span><span class="lg-stat-icon"><i class="mdi mdi-school-outline"></i></span></div><small>Schools with submissions</small><strong><?= number_format($school_count); ?></strong><span class="lg-stat-hint">Review submitted records <i class="mdi mdi-arrow-right"></i></span></div></a></div>
+        <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Summary status</span><span class="lg-stat-icon"><i class="mdi mdi-file-document-outline"></i></span></div><small>Current fiscal year</small><strong><?= $division_reporting ? 'Reported' : 'Not reported'; ?></strong><span class="lg-stat-hint">Review summary records <i class="mdi mdi-arrow-right"></i></span></div></a></div>
         <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Encoded records</span><span class="lg-stat-icon"><i class="mdi mdi-file-document-outline"></i></span></div><small>Filipino competency gap entries</small><strong><?= number_format($record_count); ?></strong><span class="lg-stat-hint">View all entries <i class="mdi mdi-arrow-right"></i></span></div></a></div>
         <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Recorded assessed count</span><span class="lg-stat-icon"><i class="mdi mdi-account-group-outline"></i></span></div><small>Sum across submitted records</small><strong><?= number_format($learners_assessed); ?></strong><span class="lg-stat-hint">Open source data <i class="mdi mdi-arrow-right"></i></span></div></a></div>
         <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Recorded gap count</span><span class="lg-stat-icon"><i class="mdi mdi-alert-circle-outline"></i></span></div><small><?= $learners_assessed > 0 ? number_format($gap_rate, 1) . '% recorded gap rate' : 'No assessed records'; ?></small><strong><?= number_format($learners_with_gap); ?></strong><span class="lg-stat-hint">Identify priority support <i class="mdi mdi-arrow-right"></i></span></div></a></div>
@@ -226,7 +204,7 @@ if ($div_encoded_total > 0) {
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                    <p class="analysis-note">Summative CPL is encoded only by schools with the feature enabled; term average is the mean of the encoded summatives, weighted by assessed learners.</p>
+                    <p class="analysis-note">Term average is the mean of the reported summative values, weighted by assessed learners.</p>
                 </div>
             <?php endif; ?>
             <?= lg_interpretation_box($term_interp); ?>
@@ -235,7 +213,7 @@ if ($div_encoded_total > 0) {
 
     <section class="lg-card">
         <div class="lg-card-head">
-            <div><h4>Automated Thematic Analysis</h4><p>Recurring themes detected from school-submitted Intervention / Action and Remarks.</p></div>
+            <div><h4>Automated Thematic Analysis</h4><p>Recurring themes detected in the division summary's Intervention / Action and Remarks.</p></div>
             <span class="analysis-badge"><i class="mdi mdi-auto-fix"></i> NLP-assisted</span>
         </div>
         <div class="lg-card-body">
@@ -244,17 +222,17 @@ if ($div_encoded_total > 0) {
             <?php else : ?>
                 <div class="theme-summary">
                     <span><strong><?= number_format((int) $thematic_analysis['source_count']); ?></strong> records analyzed</span>
-                    <span><strong><?= number_format((int) $thematic_analysis['school_count']); ?></strong> reporting schools</span>
+                    <span><strong><?= $division_reporting ? '1' : '0'; ?></strong> division summary</span>
                     <span><strong><?= number_format(count($thematic_analysis['themes'])); ?></strong> leading themes shown</span>
                 </div>
                 <?php $leading_theme = $thematic_analysis['themes'][0]; $secondary_themes = array_slice($thematic_analysis['themes'], 1, 2); ?>
-                <div class="theme-insight"><strong>Key finding:</strong> The leading theme is <?= html_escape($leading_theme->theme); ?>, appearing in <?= number_format((int) $leading_theme->record_count); ?> submitted record<?= (int) $leading_theme->record_count === 1 ? '' : 's'; ?> across <?= number_format((int) $leading_theme->school_count); ?> school<?= (int) $leading_theme->school_count === 1 ? '' : 's'; ?>.<?php if (!empty($secondary_themes)) : ?> Other recurring priorities include <?= html_escape(implode(' and ', array_map(function ($theme) { return $theme->theme; }, $secondary_themes))); ?>.<?php endif; ?></div>
+                <div class="theme-insight"><strong>Key finding:</strong> The leading theme is <?= html_escape($leading_theme->theme); ?>, appearing in <?= number_format((int) $leading_theme->record_count); ?> summary record<?= (int) $leading_theme->record_count === 1 ? '' : 's'; ?>.<?php if (!empty($secondary_themes)) : ?> Other recurring priorities include <?= html_escape(implode(' and ', array_map(function ($theme) { return $theme->theme; }, $secondary_themes))); ?>.<?php endif; ?></div>
                 <div class="theme-grid">
                     <?php foreach ($thematic_analysis['themes'] as $theme) : $theme_width = $theme_max_count > 0 ? ((int) $theme->record_count / $theme_max_count) * 100 : 0; ?>
                         <article class="theme-item">
                             <div class="theme-item-head"><h5><?= html_escape($theme->theme); ?></h5><span class="theme-count"><?= number_format((int) $theme->record_count); ?></span></div>
                             <div class="theme-bar" aria-hidden="true"><span style="width:<?= min(100, max(0, $theme_width)); ?>%"></span></div>
-                            <div class="theme-meta"><?= number_format((int) $theme->school_count); ?> school<?= (int) $theme->school_count === 1 ? '' : 's'; ?> · <?= number_format((int) $theme->intervention_count); ?> intervention mentions · <?= number_format((int) $theme->remarks_count); ?> remark mentions</div>
+                            <div class="theme-meta"><?= number_format((int) $theme->record_count); ?> summary record<?= (int) $theme->record_count === 1 ? '' : 's'; ?> · <?= number_format((int) $theme->intervention_count); ?> intervention mentions · <?= number_format((int) $theme->remarks_count); ?> remark mentions</div>
                             <?php if (!empty($theme->examples)) : ?><p class="theme-example">“<?= html_escape($theme->examples[0]); ?>”</p><?php endif; ?>
                         </article>
                     <?php endforeach; ?>
@@ -265,35 +243,11 @@ if ($div_encoded_total > 0) {
         </div>
     </section>
 
-    <div class="division-section-heading"><h2>School participation & administration</h2><p>Review registration, manage your network, and follow up on school submissions.</p></div>
+    <div class="division-section-heading"><h2>Division administration</h2><p>Maintain organizational records and enter division-level assessment summaries.</p></div>
     <div class="row">
-        <div class="col-lg-7">
+        <div class="col-lg-12">
             <section class="divd-card">
-                <div class="divd-card-head">
-                    <div><h4>School registration progress</h4><p>Registered schools out of the total encoded in Division Setup.</p></div>
-                    <a href="<?= $div_setup_url; ?>" class="divd-glance-link">Division setup <i class="mdi mdi-arrow-right" aria-hidden="true"></i></a>
-                </div>
-                <div class="divd-card-body">
-                    <?php if ($div_encoded_total > 0) : ?>
-                        <div class="divd-reg-number"><?= number_format($div_signup_pct, 1); ?>%</div>
-                        <p class="divd-reg-label">of encoded schools are registered in the system</p>
-                        <div class="divd-reg-bar" aria-hidden="true"><span style="width:<?= min(100, max(0, $div_signup_pct)); ?>%"></span></div>
-                        <div class="divd-reg-foot">
-                            <span><strong><?= number_format($div_registered); ?></strong> registered</span>
-                            <span><strong><?= number_format($div_encoded_total); ?></strong> encoded total</span>
-                        </div>
-                        <?= lg_interpretation_box($reg_interp); ?>
-                    <?php else : ?>
-                        <div class="divd-reg-number">Not configured</div>
-                        <p class="divd-reg-label">Set your total number of schools in Division Setup to track registration progress.</p>
-                        <a href="<?= $div_setup_url; ?>" class="divd-glance-link">Configure now <i class="mdi mdi-arrow-right" aria-hidden="true"></i></a>
-                    <?php endif; ?>
-                </div>
-            </section>
-        </div>
-        <div class="col-lg-5">
-            <section class="divd-card">
-                <div class="divd-card-head"><div><h4>Division network</h4><p>Districts and schools under your division.</p></div></div>
+                <div class="divd-card-head"><div><h4>Division reference data</h4><p>Organizational records remain available to division administrators; school accounts do not have sign-in access.</p></div></div>
                 <div class="divd-card-body">
                     <div class="divd-glance">
                         <span class="divd-glance-icon navy"><i class="mdi mdi-map-marker-multiple"></i></span>
@@ -302,7 +256,7 @@ if ($div_encoded_total > 0) {
                     </div>
                     <div class="divd-glance">
                         <span class="divd-glance-icon green"><i class="mdi mdi-school-outline"></i></span>
-                        <div class="divd-glance-text"><strong><?= number_format($div_registered); ?></strong><small>Registered school<?= $div_registered === 1 ? '' : 's'; ?></small></div>
+                        <div class="divd-glance-text"><strong>Manage</strong><small>School directory</small></div>
                         <a class="divd-glance-link" href="<?= $div_schools_url; ?>">Manage <i class="mdi mdi-arrow-right"></i></a>
                     </div>
                 </div>
@@ -323,9 +277,14 @@ if ($div_encoded_total > 0) {
                     <span class="divd-quick-body"><strong>Submitted Records</strong><small>View all entries</small></span>
                     <span class="divd-quick-arrow"><i class="mdi mdi-arrow-right"></i></span>
                 </a>
-                <a class="divd-quick" href="<?= $div_submission_url; ?>">
-                    <span class="divd-quick-icon"><i class="mdi mdi-clipboard-check-outline"></i></span>
-                    <span class="divd-quick-body"><strong>School Submissions</strong><small>Monitor reporting</small></span>
+                <a class="divd-quick" href="<?= $phil_iri_url; ?>">
+                    <span class="divd-quick-icon"><i class="mdi mdi-book-open-page-variant"></i></span>
+                    <span class="divd-quick-body"><strong>Phil-IRI Division Entry</strong><small>Enter aggregate reading results</small></span>
+                    <span class="divd-quick-arrow"><i class="mdi mdi-arrow-right"></i></span>
+                </a>
+                <a class="divd-quick" href="<?= $crla_url; ?>">
+                    <span class="divd-quick-icon"><i class="mdi mdi-book-open-variant"></i></span>
+                    <span class="divd-quick-body"><strong>CRLA Division Entry</strong><small>Enter aggregate early literacy results</small></span>
                     <span class="divd-quick-arrow"><i class="mdi mdi-arrow-right"></i></span>
                 </a>
                 <a class="divd-quick" href="<?= $div_setup_url; ?>">

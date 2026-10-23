@@ -1,6 +1,6 @@
 <?php
 $summary = $summary ?: (object) array('record_count' => 0, 'school_count' => 0, 'learners_assessed' => 0, 'learners_with_gap' => 0);
-$scope_label = $scope['type'] === 'school' ? 'School workspace' : ($scope['type'] === 'district' ? 'District Filipino overview' : ($scope['type'] === 'division' ? 'Division summary' : 'Regional overview'));
+$scope_label = $scope['type'] === 'division' ? 'Division summary' : 'Regional overview';
 $school_name = $school && trim((string) $school->schoolName) !== '' ? $school->schoolName : 'School profile not set up';
 $division_name = !empty($division->description) ? $division->description : 'Division not assigned';
 $district_name = !empty($district->description) ? $district->description : 'District not assigned';
@@ -38,8 +38,9 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
     <div class="lgm-hero">
         <span class="lgm-eyebrow"><i class="mdi mdi-chart-donut-variant"></i><?= html_escape($scope_label); ?></span>
         <h1><i class="mdi mdi-chart-box mr-2"></i>Filipino Learning Monitoring</h1>
-        <p><?= html_escape($scope_label); ?> · Fiscal Year <?= (int) $this->session->fy; ?> · Track Filipino subject competencies, learner gaps, and interventions.</p>
+        <p><?= html_escape($scope_label); ?> · Fiscal Year <?= (int) $this->session->fy; ?> · Review division-level Filipino competency gaps and interventions.</p>
     </div>
+    <?php if ($is_division_user && !$entry_mode && !$is_archive_year): ?><div class="mb-3"><a class="btn btn-primary" href="<?= base_url('Pages/learning_gap_entry'); ?>"><i class="mdi mdi-plus mr-1" aria-hidden="true"></i> Encode Division Summary</a></div><?php endif; ?>
 
     <?php if ($this->session->flashdata('success')): ?><div class="alert alert-success"><?= $this->session->flashdata('success'); ?></div><?php endif; ?>
     <?php if ($this->session->flashdata('danger')): ?><div class="alert alert-danger"><?= $this->session->flashdata('danger'); ?></div><?php endif; ?>
@@ -82,9 +83,9 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
     </div>
     <?php endif; ?>
 
-    <?php if ($is_school && $entry_mode): ?>
+    <?php if ($is_division_user && $entry_mode): ?>
     <div class="lgm-card data-entry-card" id="data-entry">
-        <div class="lgm-card-head"><h4><?= !empty($edit_record) ? 'Edit Filipino learning data' : 'Encode Filipino learning data'; ?></h4><small>Record assessment results for Filipino subject competencies. Your school, division, and district assignment are set automatically.</small></div>
+        <div class="lgm-card-head"><h4><?= !empty($edit_record) ? 'Edit division Filipino summary' : 'Encode division Filipino summary'; ?></h4><small>Enter the aggregate assessment results for your division. The division assignment is set automatically.</small></div>
         <div class="lgm-card-body">
             <?= form_open('Pages/learning_gap_save'); ?>
             <input type="hidden" name="record_id" value="<?= (int) $value('id'); ?>">
@@ -122,16 +123,16 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
     <?php endif; ?>
 
     <?php if (!$entry_mode && !empty($division_summary)): ?>
-    <div class="lgm-card"><div class="lgm-card-head"><h4><i class="mdi mdi-office-building mr-1"></i> Summary by division</h4><small>Counts are direct sums from submitted records. Click any figure to review the source data.</small></div><div class="table-responsive"><table class="table summary-table mb-0"><thead><tr><th>Division</th><th>Schools reporting</th><th>Records</th><th>Recorded assessed</th><th>Recorded gap</th></tr></thead><tbody><?php foreach ($division_summary as $row): $record_link = base_url('Pages/learning_gap_records?division_id=' . (int) $row->division_id); ?><tr><td><strong><?= html_escape($row->division_name); ?></strong></td><td><a href="<?= $record_link; ?>" title="View <?= html_escape($row->division_name); ?> records"><?= (int) $row->school_count; ?></a></td><td><a href="<?= $record_link; ?>" title="View <?= html_escape($row->division_name); ?> records"><?= (int) $row->record_count; ?></a></td><td><a href="<?= $record_link; ?>" title="View <?= html_escape($row->division_name); ?> records"><?= number_format((int) $row->learners_assessed); ?></a></td><td><a href="<?= $record_link; ?>" title="View <?= html_escape($row->division_name); ?> records"><?= number_format((int) $row->learners_with_gap); ?></a></td></tr><?php endforeach; ?></tbody></table></div><?php if (!empty($division_interp)): ?><div class="lgm-interp-foot"><?= lg_interpretation_box($division_interp); ?></div><?php endif; ?></div>
+    <div class="lgm-card"><div class="lgm-card-head"><h4><i class="mdi mdi-office-building mr-1"></i> Summary by division</h4><small>Counts are direct sums from division summary records. Click any figure to review the source data.</small></div><div class="table-responsive"><table class="table summary-table mb-0"><thead><tr><th>Division</th><th>Summary status</th><th>Records</th><th>Recorded assessed</th><th>Recorded gap</th></tr></thead><tbody><?php foreach ($division_summary as $row): $record_link = base_url('Pages/learning_gap_records?division_id=' . (int) $row->division_id); ?><tr><td><strong><?= html_escape($row->division_name); ?></strong></td><td><?= (int) $row->record_count > 0 ? 'Reported' : 'No summary'; ?></td><td><a href="<?= $record_link; ?>" title="View <?= html_escape($row->division_name); ?> records"><?= (int) $row->record_count; ?></a></td><td><a href="<?= $record_link; ?>" title="View <?= html_escape($row->division_name); ?> records"><?= number_format((int) $row->learners_assessed); ?></a></td><td><a href="<?= $record_link; ?>" title="View <?= html_escape($row->division_name); ?> records"><?= number_format((int) $row->learners_with_gap); ?></a></td></tr><?php endforeach; ?></tbody></table></div><?php if (!empty($division_interp)): ?><div class="lgm-interp-foot"><?= lg_interpretation_box($division_interp); ?></div><?php endif; ?></div>
     <?php endif; ?>
 
     <?php if (!$entry_mode && $scope['type'] === 'division'): ?>
     <div class="lgm-card">
         <div class="lgm-card-head">
             <div class="record-tools">
-                <div><h4><i class="mdi mdi-format-list-numbered mr-1"></i> Least Learned Competencies Ranking<?php if ($has_ranking_filter): ?><span class="ranking-context"><?= html_escape($learning_area_filter); ?> &middot; <?= html_escape($term_filter); ?></span><?php endif; ?></h4><small>Ranked by the number of school submissions that selected each competency.</small></div>
+                <div><h4><i class="mdi mdi-format-list-numbered mr-1"></i> Least Learned Competencies Ranking<?php if ($has_ranking_filter): ?><span class="ranking-context"><?= html_escape($learning_area_filter); ?> &middot; <?= html_escape($term_filter); ?></span><?php endif; ?></h4><small>Ranked by the number of division summary records that selected each competency.</small></div>
                 <form class="record-filter" method="get" action="<?= base_url('Pages/learning_gap'); ?>">
-                    <div><label for="learningAreaFilter">Learning Area</label><select id="learningAreaFilter" name="learning_area" class="custom-select"><option value="">All learning areas</option><?php foreach ($learning_area_filters as $area): ?><option value="<?= html_escape($area); ?>" <?= $learning_area_filter === $area ? 'selected' : ''; ?>><?= html_escape($area); ?></option><?php endforeach; ?></select></div>
+                    <div><label for="learningAreaFilter">Learning Area</label><select id="learningAreaFilter" name="learning_area" class="custom-select"><?php foreach ($learning_area_filters as $area): ?><option value="<?= html_escape($area); ?>" <?= $learning_area_filter === $area ? 'selected' : ''; ?>><?= html_escape($area); ?></option><?php endforeach; ?></select></div>
                     <div><label for="termFilter">Term</label><select id="termFilter" name="term" class="custom-select"><option value="">All terms</option><?php foreach (array('Term 1', 'Term 2', 'Term 3') as $filter_term): ?><option value="<?= $filter_term; ?>" <?= $term_filter === $filter_term ? 'selected' : ''; ?>><?= $filter_term; ?></option><?php endforeach; ?></select></div>
                     <button class="btn btn-outline-primary btn-sm" type="submit"><i class="mdi mdi-filter-outline mr-1"></i>Filter</button>
                 </form>
@@ -142,11 +143,11 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
                 <thead><tr><th>Rank</th><th>Grade</th><th class="competency-column">Least Learned Competency</th><th>Counts</th></tr></thead>
                 <tbody>
                     <?php if (!$has_ranking_filter): ?>
-                        <tr><td colspan="4" class="p-4 text-center text-muted">Select both Learning Area and Term, then click Filter to show the competency ranking.</td></tr>
+                        <tr><td colspan="4" class="p-4 text-center text-muted">Select a Term, then click Filter to show the Filipino competency ranking.</td></tr>
                     <?php elseif (empty($competency_ranking)): ?>
-                        <tr><td colspan="4" class="p-4 text-center text-muted">No school submissions with least learned competencies for this selection yet.</td></tr>
+                        <tr><td colspan="4" class="p-4 text-center text-muted">No division summary records with least learned competencies for this selection yet.</td></tr>
                     <?php else: foreach ($competency_ranking as $row): $record_link = base_url('Pages/learning_gap_records?' . http_build_query(array('grade_level' => $row->grade_level, 'learning_area' => $learning_area_filter, 'term' => $term_filter, 'competency' => $row->competency))); ?>
-                        <tr><td><span class="rank-pill">#<?= (int) $row->rank; ?></span></td><td><?= html_escape($row->grade_level); ?></td><td class="wide competency-column"><?= html_escape($row->competency); ?></td><td><a href="<?= html_escape($record_link); ?>" title="View the <?= (int) $row->submission_count; ?> matching school submission<?= (int) $row->submission_count === 1 ? '' : 's'; ?>"><?= (int) $row->submission_count; ?></a></td></tr>
+                        <tr><td><span class="rank-pill">#<?= (int) $row->rank; ?></span></td><td><?= html_escape($row->grade_level); ?></td><td class="wide competency-column"><?= html_escape($row->competency); ?></td><td><a href="<?= html_escape($record_link); ?>" title="View the <?= (int) $row->submission_count; ?> matching division summary record<?= (int) $row->submission_count === 1 ? '' : 's'; ?>"><?= (int) $row->submission_count; ?></a></td></tr>
                     <?php endforeach; endif; ?>
                 </tbody>
             </table>

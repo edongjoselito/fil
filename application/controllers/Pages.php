@@ -13,7 +13,7 @@ class Pages extends CI_Controller
         $public_methods = array(
             // The default controller lands on view(), which performs its own
             // guest-only redirect to homepage before rendering any data.
-            'view', 'homepage', 'log_in', 'signup', 'signup_email_available', 'forgot_password', 'confirm_signup',
+            'view', 'homepage', 'log_in', 'signup', 'signup_email_available', 'signup_district', 'forgot_password', 'confirm_signup',
             'lock_user_screen', 'logout',
             'get_provinces', 'get_districts', 'get_district_by_division',
             'data_privacy', 'authors', 'about', 'verify',
@@ -22,6 +22,13 @@ class Pages extends CI_Controller
 
         if (!in_array($method, $public_methods, true) && !$this->session->logged_in) {
             show_error('Authentication is required to access this resource.', 401);
+        }
+
+        $allowed_positions = array('admin', 'region', 'division', 'division_head', 'ict');
+        $position = strtolower(trim((string) $this->session->position));
+        if ($this->session->logged_in && $method !== 'logout'
+            && !in_array($position, $allowed_positions, true)) {
+            show_error('This account type no longer has access. Please contact your Division Office.', 403);
         }
 
         // Accounts issued a temporary password may only change that password
@@ -42,7 +49,15 @@ class Pages extends CI_Controller
             'division' => array('division', 'division_head', 'ict'),
             'district' => array('district'),
             'school_dashboard' => array('school'),
-            'learning_gap_archives' => array('school', 'division', 'division_head', 'region', 'district'),
+            'phil_iri' => array('division', 'division_head', 'ict'),
+            'phil_iri_setup_sy' => array('division', 'division_head', 'ict'),
+            'phil_iri_save' => array('division', 'division_head', 'ict'),
+            'crla' => array('division', 'division_head', 'ict'),
+            'crla_setup_sy' => array('division', 'division_head', 'ict'),
+            'crla_save' => array('division', 'division_head', 'ict'),
+            'regional_phil_iri_report' => array('region', 'division', 'division_head', 'ict'),
+            'regional_crla_report' => array('region', 'division', 'division_head', 'ict'),
+            'learning_gap_archives' => array('division', 'division_head', 'ict', 'region', 'admin'),
             'profilelist' => array('admin'),
             'profile_new' => array('admin'),
             'qr' => array('admin'),
@@ -64,7 +79,7 @@ class Pages extends CI_Controller
             'report_overall_accomplishments' => array('admin', 'region'),
             'report_sgc' => array('admin', 'region'),
             'sbm_rate_divisions_list' => array('admin', 'region'),
-            'district_account' => array('division', 'ict'),
+            'district_account' => array('admin', 'division', 'ict'),
             'update_total_schools' => array('admin', 'region'),
             'action_plan_new' => array('school'),
             'sbm_action_plan' => array('school'),
@@ -671,6 +686,10 @@ class Pages extends CI_Controller
             show_404();
         }
 
+        if (!$this->is_allowed_managed_position($user->position)) {
+            show_error('This account type is no longer available for management.', 403);
+        }
+
         if ($this->is_division_user_manager() && (string) $user->p_id !== (string) $this->session->division) {
             show_error('You can only manage users under your division.', 403);
         }
@@ -688,16 +707,15 @@ class Pages extends CI_Controller
 
     private function is_allowed_managed_position($position)
     {
+        $retained_positions = array('admin', 'region', 'division', 'division_head', 'ict');
         if ($this->session->position === 'admin') {
-            return true;
+            return in_array($position, $retained_positions, true);
         }
 
         if ($this->session->position === 'district') {
-            return in_array($position, array('district', 'school'), true);
+            return false;
         }
-        $position_record = $this->Page_model->one_cond_row('position', 'pos', $position);
-
-        return $position_record && !in_array($position, array('admin', 'region', 'division'), true);
+        return in_array($position, array('division_head', 'ict'), true);
     }
 
     private function validate_managed_district($district_id)
@@ -894,8 +912,6 @@ class Pages extends CI_Controller
             'division'      => 'division',
             'division_head' => 'division',
             'ict'           => 'division',
-            'district'      => 'district',
-            'school'        => 'school',
         );
 
         return isset($paths[$position]) ? $paths[$position] : null;
@@ -944,7 +960,7 @@ class Pages extends CI_Controller
 
     public function district()
     {
-        $this->learning_gap();
+        show_error('District accounts no longer have system access.', 403);
     }
 
     /**
@@ -970,6 +986,404 @@ class Pages extends CI_Controller
         return array('type' => 'district', 'id' => $district_id);
     }
 
+    private function learning_gap_division_key($division_id)
+    {
+        return '__division__' . (int) $division_id;
+    }
+
+    private function reading_assessment_report_scope($assessment)
+    {
+        $position = strtolower(trim((string) $this->session->position));
+        $division_id = 0;
+        $scope_heading = 'Regional ' . $assessment . ' Report';
+        $scope_label = 'Regional · All divisions';
+
+        if ($position === 'region') {
+            $region_id = (int) $this->session->region;
+        } elseif (in_array($position, array('division', 'division_head', 'ict'), true)) {
+            $division_id = (int) $this->session->division;
+            $division = $division_id > 0
+                ? $this->db->where('id', $division_id)->get('division')->row()
+                : null;
+            if (!$division) {
+                show_error('Your account has no valid division assignment.', 403);
+                return false;
+            }
+            $region_id = (int) $division->region_id;
+            $scope_heading = 'Division ' . $assessment . ' Report';
+            $scope_label = (string) $division->description;
+        } else {
+            show_error('This account cannot access the ' . $assessment . ' report.', 403);
+            return false;
+        }
+
+        if ($region_id <= 0) {
+            show_error('Your account has no assigned region.', 403);
+            return false;
+        }
+        return array(
+            'position' => $position,
+            'region_id' => $region_id,
+            'division_id' => $division_id,
+            'scope_heading' => $scope_heading,
+            'scope_label' => $scope_label,
+        );
+    }
+
+    private function reading_assessment_school_year()
+    {
+        $year = (int) $this->session->fy;
+        $requested_year = $this->input->get('sy');
+        if (is_scalar($requested_year)) {
+            $requested_year = trim((string) $requested_year);
+            if (preg_match('/^(\d{4})-(\d{4})$/', $requested_year, $parts)
+                && (int) $parts[2] === (int) $parts[1] + 1) {
+                $year = (int) $parts[2];
+            } elseif (ctype_digit($requested_year)) {
+                $year = (int) $requested_year;
+            }
+        }
+        if ($year < 2023 || $year > (int) date('Y') + 2) {
+            $year = (int) $this->session->fy;
+        }
+        return $year;
+    }
+
+    private function reading_assessment_get($key)
+    {
+        $value = $this->input->get($key);
+        return is_scalar($value) ? trim((string) $value) : '';
+    }
+
+    private function summarize_reading_assessment_records($records, $fields)
+    {
+        $totals = array_fill_keys($fields, 0);
+        $groups = array();
+        $divisions = array();
+        $reported_divisions = array();
+
+        foreach ($records as $record) {
+            foreach ($fields as $field) {
+                $totals[$field] += (int) $record->$field;
+            }
+
+            $group_key = (int) $record->grade_level . '|' . $record->language . '|' . $record->assessment_period;
+            if (!isset($groups[$group_key])) {
+                $groups[$group_key] = array(
+                    'grade_level' => (int) $record->grade_level,
+                    'language' => $record->language,
+                    'assessment_period' => $record->assessment_period,
+                    'divisions' => array(),
+                ) + array_fill_keys($fields, 0);
+            }
+            $groups[$group_key]['divisions'][(int) $record->division_id] = true;
+            foreach ($fields as $field) {
+                $groups[$group_key][$field] += (int) $record->$field;
+            }
+
+            $division_key = (int) $record->division_id;
+            if (!isset($divisions[$division_key])) {
+                $divisions[$division_key] = array(
+                    'name' => $record->division_name,
+                    'divisions' => array(),
+                ) + array_fill_keys($fields, 0);
+            }
+            $divisions[$division_key]['divisions'][$division_key] = true;
+            foreach ($fields as $field) {
+                $divisions[$division_key][$field] += (int) $record->$field;
+            }
+            $reported_divisions[$division_key] = true;
+        }
+
+        foreach ($groups as &$group) {
+            $group['division_count'] = count($group['divisions']);
+            unset($group['divisions']);
+        }
+        unset($group);
+        foreach ($divisions as &$division) {
+            $division['division_count'] = count($division['divisions']);
+            unset($division['divisions']);
+        }
+        unset($division);
+        usort($groups, function ($a, $b) {
+            return array($a['grade_level'], $a['language'], $a['assessment_period'])
+                <=> array($b['grade_level'], $b['language'], $b['assessment_period']);
+        });
+
+        return array(
+            'totals' => $totals,
+            'groups' => array_values($groups),
+            'divisions' => array_values($divisions),
+            'reported_division_count' => count($reported_divisions),
+        );
+    }
+
+    private function reading_assessment_school_year_options()
+    {
+        $options = array();
+        for ($year = (int) date('Y') + 2; $year >= 2023; $year--) {
+            $options[$year] = ($year - 1) . '-' . $year;
+        }
+        return $options;
+    }
+
+    public function phil_iri()
+    {
+        $division_id = (int) $this->session->division;
+        $division = $this->Page_model->one_cond_row('division', 'id', $division_id);
+        if (!$division) {
+            show_error('Your account has no valid division assignment.', 403);
+            return;
+        }
+        $selected_sy = $this->Page_model->phil_iri_default_sy($division_id, (int) $this->session->fy);
+        $this->load->view('templates/header');
+        $this->load->view('templates/menu');
+        $this->load->view('pages/phil_iri', array(
+            'grades' => range(4, 10),
+            'records' => $this->Page_model->phil_iri_records($division_id, $selected_sy),
+            'division_name' => $division->description,
+            'selected_sy' => $selected_sy,
+            'school_year' => ($selected_sy - 1) . '-' . $selected_sy,
+            'school_year_options' => $this->reading_assessment_school_year_options(),
+        ));
+        $this->load->view('templates/footer');
+        $this->load->view('templates/footer_basic');
+    }
+
+    public function phil_iri_setup_sy()
+    {
+        $this->require_post();
+        $division_id = (int) $this->session->division;
+        if (!$this->Page_model->one_cond_row('division', 'id', $division_id)) {
+            show_error('Your account has no valid division assignment.', 403);
+            return;
+        }
+        $year = $this->input->post('school_year');
+        if (!is_scalar($year) || !ctype_digit((string) $year)
+            || (int) $year < 2023 || (int) $year > (int) date('Y') + 2) {
+            $this->session->set_flashdata('danger', 'Select a valid school year.');
+        } elseif ($this->Page_model->set_phil_iri_default_sy($division_id, (int) $year)) {
+            $this->session->set_flashdata('success', 'Default Phil-IRI school year updated for this division.');
+        } else {
+            $this->session->set_flashdata('danger', 'The default school year could not be saved.');
+        }
+        redirect('Pages/phil_iri');
+    }
+
+    public function phil_iri_save()
+    {
+        $this->require_post();
+        $this->form_validation->set_rules('grade_level', 'Grade level', 'required|integer');
+        $this->form_validation->set_rules('language', 'Language', 'required|in_list[English,Filipino]');
+        $this->form_validation->set_rules('assessment_period', 'Assessment period', 'required|in_list[Pre-test,Post-test]');
+        foreach (array('learners_assessed', 'independent', 'instructional', 'frustration', 'non_reader') as $field) {
+            $this->form_validation->set_rules($field, ucwords(str_replace('_', ' ', $field)), 'required|integer|greater_than_equal_to[0]');
+        }
+
+        if ($this->form_validation->run() !== false) {
+            $division_id = (int) $this->session->division;
+            $grade = (int) $this->input->post('grade_level');
+            $levels = array('independent', 'instructional', 'frustration', 'non_reader');
+            $level_total = 0;
+            foreach ($levels as $field) {
+                $level_total += (int) $this->input->post($field);
+            }
+            if ($division_id > 0 && $grade >= 4 && $grade <= 10
+                && $level_total <= (int) $this->input->post('learners_assessed')) {
+                $school_year = $this->Page_model->phil_iri_default_sy($division_id, (int) $this->session->fy);
+                if ($this->Page_model->save_phil_iri($division_id, $school_year)) {
+                    $this->session->set_flashdata('success', 'Phil-IRI results saved.');
+                } else {
+                    $this->session->set_flashdata('danger', 'The results could not be saved. Please try again.');
+                }
+            } else {
+                $this->session->set_flashdata('danger', 'Check the grade level and ensure reading-level totals do not exceed learners assessed.');
+            }
+        } else {
+            $this->session->set_flashdata('danger', validation_errors('', ' '));
+        }
+        redirect('Pages/phil_iri');
+    }
+
+    public function crla()
+    {
+        $division_id = (int) $this->session->division;
+        $division = $this->Page_model->one_cond_row('division', 'id', $division_id);
+        if (!$division) {
+            show_error('Your account has no valid division assignment.', 403);
+            return;
+        }
+
+        $selected_sy = $this->Page_model->crla_default_sy($division_id, (int) $this->session->fy);
+        $this->load->view('templates/header');
+        $this->load->view('templates/menu');
+        $this->load->view('pages/crla', array(
+            'records' => $this->Page_model->crla_records($division_id, $selected_sy),
+            'division_name' => $division->description,
+            'selected_sy' => $selected_sy,
+            'school_year' => ($selected_sy - 1) . '-' . $selected_sy,
+            'school_year_options' => $this->reading_assessment_school_year_options(),
+        ));
+        $this->load->view('templates/footer');
+        $this->load->view('templates/footer_basic');
+    }
+
+    public function crla_setup_sy()
+    {
+        $this->require_post();
+        $division_id = (int) $this->session->division;
+        if (!$this->Page_model->one_cond_row('division', 'id', $division_id)) {
+            show_error('Your account has no valid division assignment.', 403);
+            return;
+        }
+        $year = $this->input->post('school_year');
+        if (!is_scalar($year) || !ctype_digit((string) $year)
+            || (int) $year < 2023 || (int) $year > (int) date('Y') + 2) {
+            $this->session->set_flashdata('danger', 'Select a valid school year.');
+        } elseif ($this->Page_model->set_crla_default_sy($division_id, (int) $year)) {
+            $this->session->set_flashdata('success', 'Default CRLA school year updated for this division.');
+        } else {
+            $this->session->set_flashdata('danger', 'The default school year could not be saved.');
+        }
+        redirect('Pages/crla');
+    }
+
+    public function crla_save()
+    {
+        $this->require_post();
+        $this->form_validation->set_rules('grade_level', 'Grade level', 'required|integer|in_list[1,2,3]');
+        $this->form_validation->set_rules('language', 'Language', 'required|in_list[Mother Tongue (L1),Filipino,English]');
+        $this->form_validation->set_rules('assessment_period', 'Assessment period', 'required|in_list[BOSY,EOSY]');
+        $fields = array('learners_assessed', 'low_emerging', 'high_emerging', 'developing', 'transitioning', 'at_grade_level');
+        foreach ($fields as $field) {
+            $this->form_validation->set_rules($field, ucwords(str_replace('_', ' ', $field)), 'required|integer|greater_than_equal_to[0]');
+        }
+
+        if ($this->form_validation->run() !== false) {
+            $division_id = (int) $this->session->division;
+            $division = $this->Page_model->one_cond_row('division', 'id', $division_id);
+            $grade = (int) $this->input->post('grade_level');
+            $language = (string) $this->input->post('language', true);
+            $allowed_language = $language === 'Mother Tongue (L1)'
+                || ($grade >= 2 && $language === 'Filipino')
+                || ($grade >= 3 && $language === 'English');
+            $profiles = array('low_emerging', 'high_emerging', 'developing', 'transitioning', 'at_grade_level');
+            $profile_total = 0;
+            foreach ($profiles as $field) {
+                $profile_total += (int) $this->input->post($field);
+            }
+            if ($division && $allowed_language
+                && $profile_total <= (int) $this->input->post('learners_assessed')) {
+                $school_year = $this->Page_model->crla_default_sy($division_id, (int) $this->session->fy);
+                if ($this->Page_model->save_crla($division_id, $school_year)) {
+                    $this->session->set_flashdata('success', 'CRLA results saved.');
+                } else {
+                    $this->session->set_flashdata('danger', 'The CRLA results could not be saved. Please try again.');
+                }
+            } else {
+                $this->session->set_flashdata('danger', 'Check the grade, language, and ensure profile counts do not exceed learners assessed.');
+            }
+        } else {
+            $this->session->set_flashdata('danger', validation_errors('', ' '));
+        }
+        redirect('Pages/crla');
+    }
+
+    public function regional_phil_iri_report()
+    {
+        $scope = $this->reading_assessment_report_scope('Phil-IRI');
+        if (!$scope) {
+            return;
+        }
+        $grade_band = $this->reading_assessment_get('grade_band');
+        $bands = array(
+            'all' => array('label' => 'All Phil-IRI grades (4–10)', 'grades' => range(4, 10), 'categories' => array(1, 2, 3, 4, 5)),
+            'ks2' => array('label' => 'Key Stage 2 (Grades 4–6)', 'grades' => array(4, 5, 6), 'categories' => array(1, 2, 3)),
+            'ks3' => array('label' => 'Key Stage 3 (Grades 7–10)', 'grades' => array(7, 8, 9, 10), 'categories' => array(2, 3, 4, 5)),
+        );
+        if (!isset($bands[$grade_band])) {
+            $grade_band = 'all';
+        }
+        $school_year = $this->reading_assessment_school_year();
+        $records = $this->Page_model->regional_phil_iri_records(
+            $scope['region_id'],
+            $school_year,
+            $scope['division_id'],
+            $bands[$grade_band]['grades']
+        );
+        $summary = $this->summarize_reading_assessment_records(
+            $records,
+            array('learners_assessed', 'independent', 'instructional', 'frustration', 'non_reader')
+        );
+        $this->load->view('templates/header');
+        $this->load->view('templates/menu');
+        $this->load->view('pages/regional_phil_iri_report', array_merge($summary, array(
+            'records' => $records,
+            'scope_heading' => $scope['scope_heading'] . ' · ' . $bands[$grade_band]['label'],
+            'scope_label' => $scope['scope_label'],
+            'school_year' => $school_year,
+            'school_year_label' => ($school_year - 1) . '-' . $school_year,
+            'grade_band' => $grade_band,
+            'grade_bands' => $bands,
+            'eligible_division_count' => $this->Page_model->regional_phil_iri_division_count(
+                $scope['region_id'],
+                $scope['division_id']
+            ),
+            'show_division_summary' => $scope['division_id'] === 0,
+        )));
+        $this->load->view('templates/footer');
+        $this->load->view('templates/footer_basic');
+    }
+
+    public function regional_crla_report()
+    {
+        $scope = $this->reading_assessment_report_scope('CRLA');
+        if (!$scope) {
+            return;
+        }
+        $period = $this->reading_assessment_get('period');
+        if (!in_array($period, array('BOSY', 'EOSY', 'all'), true)) {
+            $period = 'BOSY';
+        }
+        $grade = $this->reading_assessment_get('grade');
+        if (!in_array($grade, array('1', '2', '3'), true)) {
+            $grade = '';
+        }
+        $language = $this->reading_assessment_get('language');
+        if (!in_array($language, array('Mother Tongue (L1)', 'Filipino', 'English'), true)) {
+            $language = '';
+        }
+        $school_year = $this->reading_assessment_school_year();
+        $records = $this->Page_model->regional_crla_records($scope['region_id'], $school_year, $scope['division_id'], array(
+            'assessment_period' => $period === 'all' ? '' : $period,
+            'grade_level' => $grade,
+            'language' => $language,
+        ));
+        $summary = $this->summarize_reading_assessment_records(
+            $records,
+            array('learners_assessed', 'low_emerging', 'high_emerging', 'developing', 'transitioning', 'at_grade_level')
+        );
+        $this->load->view('templates/header');
+        $this->load->view('templates/menu');
+        $this->load->view('pages/regional_crla_report', array_merge($summary, array(
+            'records' => $records,
+            'scope_heading' => $scope['scope_heading'],
+            'scope_label' => $scope['scope_label'],
+            'school_year' => $school_year,
+            'school_year_label' => ($school_year - 1) . '-' . $school_year,
+            'period' => $period,
+            'grade_filter' => $grade,
+            'language_filter' => $language,
+            'eligible_division_count' => $this->Page_model->regional_crla_division_count(
+                $scope['region_id'],
+                $scope['division_id']
+            ),
+            'show_division_summary' => $scope['division_id'] === 0,
+        )));
+        $this->load->view('templates/footer');
+        $this->load->view('templates/footer_basic');
+    }
+
     public function learning_gap($entry_mode = false)
     {
         if (!$this->session->logged_in) {
@@ -977,30 +1391,29 @@ class Pages extends CI_Controller
         }
 
         $position = (string) $this->session->position;
-        if (!in_array($position, array('school', 'division', 'division_head', 'region', 'admin', 'district'), true)) {
+        if (!in_array($position, array('division', 'division_head', 'ict', 'region', 'admin'), true)) {
             show_error('You are not authorized to access Learning Gap Monitoring.', 403);
         }
 
-        $scope = array('type' => 'school', 'id' => (string) $this->session->username);
-        if (in_array($position, array('division', 'division_head'), true)) {
+        $scope = array('type' => 'region', 'id' => (int) $this->session->region);
+        if (in_array($position, array('division', 'division_head', 'ict'), true)) {
             $scope = array('type' => 'division', 'id' => (int) $this->session->division);
-        } elseif (in_array($position, array('region', 'admin'), true)) {
-            $scope = array('type' => 'region', 'id' => (int) $this->session->region);
         }
 
-        if ($position === 'district') {
-            $scope = $this->district_learning_gap_scope();
-        }
+        // This Filipino workspace keeps its subject scope on the server.
+        $scope['learning_area'] = 'Filipino';
 
         $data['title'] = 'Learning Gap Monitoring';
         $data['entry_mode'] = (bool) $entry_mode;
         $data['scope'] = $scope;
-        $data['is_school'] = $position === 'school';
-        $data['summative_cpl_enabled'] = $data['is_school']
-            ? $this->Page_model->school_summative_cpl_enabled((string) $this->session->username)
-            : false;
+        $data['is_school'] = false;
+        $data['is_division_user'] = in_array($position, array('division', 'division_head', 'ict'), true);
+        $data['summative_cpl_enabled'] = false;
         $data['is_archive_year'] = (int) $this->session->fy < (int) date('Y');
-        if ($data['is_school'] && $data['entry_mode'] && $data['is_archive_year']) {
+        if ($data['entry_mode'] && !$data['is_division_user']) {
+            show_error('Only division users can encode Learning Gap summaries.', 403);
+        }
+        if ($data['is_division_user'] && $data['entry_mode'] && $data['is_archive_year']) {
             $this->session->set_flashdata('danger', 'Archived fiscal years are read-only. Return to the current fiscal year to encode or edit records.');
             redirect('Pages/learning_gap_archives');
             return;
@@ -1014,14 +1427,12 @@ class Pages extends CI_Controller
         }
         $data['summary'] = $this->Page_model->learning_gap_summary($scope);
         $data['term_performance'] = $this->Page_model->learning_gap_term_performance($scope);
-        $data['learning_area_filter'] = $scope['type'] === 'division'
-            ? trim((string) $this->input->get('learning_area', true))
-            : '';
+        $data['learning_area_filter'] = 'Filipino';
         $data['term_filter'] = $scope['type'] === 'division'
             ? trim((string) $this->input->get('term', true))
             : '';
         $data['learning_area_filters'] = $scope['type'] === 'division'
-            ? $this->Page_model->division_learning_area_options((int) $scope['id'])
+            ? array('Filipino')
             : array();
         $data['has_ranking_filter'] = $scope['type'] === 'division'
             && $data['learning_area_filter'] !== '' && $data['term_filter'] !== '';
@@ -1033,27 +1444,26 @@ class Pages extends CI_Controller
             )
             : array();
         $data['division_summary'] = $scope['type'] === 'region'
-            ? $this->Page_model->learning_gap_division_summary($scope['id'])
+            ? $this->Page_model->learning_gap_division_summary($scope['id'], 'Filipino')
             : array();
-        $data['school'] = $data['is_school']
-            ? $this->Common->one_cond_row('schools', 'schoolID', $this->session->username)
+        $data['school'] = null;
+        $data['division'] = $scope['type'] === 'division'
+            ? $this->Page_model->one_cond_row('division', 'id', $scope['id'])
             : null;
-        $data['division'] = $data['school'] && !empty($data['school']->division_id)
-            ? $this->Page_model->one_cond_row('division', 'id', $data['school']->division_id)
-            : null;
-        $data['district'] = $data['school'] && !empty($data['school']->district_id)
-            ? $this->Page_model->one_cond_row('district', 'id', $data['school']->district_id)
-            : null;
+        $data['district'] = null;
         $data['edit_record'] = null;
         $edit_id = (int) $this->input->get('edit', true);
-        if ($data['is_school'] && $edit_id > 0 && !$data['entry_mode']) {
+        if ($data['is_division_user'] && $edit_id > 0 && !$data['entry_mode']) {
             redirect('Pages/learning_gap_entry?edit=' . $edit_id);
             return;
         }
-        if ($data['is_school'] && $edit_id > 0) {
-            $data['edit_record'] = $this->Page_model->learning_gap_record($edit_id, (string) $this->session->username);
+        if ($data['is_division_user'] && $edit_id > 0) {
+            $data['edit_record'] = $this->Page_model->learning_gap_record(
+                $edit_id,
+                $this->learning_gap_division_key((int) $this->session->division)
+            );
             if (!$data['edit_record']) {
-                $this->session->set_flashdata('danger', 'The selected record was not found in your school account.');
+                $this->session->set_flashdata('danger', 'The selected summary was not found in your division.');
                 redirect('Pages/learning_gap');
                 return;
             }
@@ -1068,8 +1478,9 @@ class Pages extends CI_Controller
 
     public function learning_gap_entry()
     {
-        if (!$this->session->logged_in || $this->session->position !== 'school') {
-            show_error('Only school accounts can access Learning Gap data entry.', 403);
+        if (!$this->session->logged_in
+            || !in_array($this->session->position, array('division', 'division_head', 'ict'), true)) {
+            show_error('Only division users can access Learning Gap summary entry.', 403);
         }
         $this->learning_gap(true);
     }
@@ -1081,21 +1492,19 @@ class Pages extends CI_Controller
             return;
         }
         $position = (string) $this->session->position;
-        if (!in_array($position, array('division', 'division_head', 'region', 'district'), true)) {
+        if (!in_array($position, array('division', 'division_head', 'ict', 'region', 'admin'), true)) {
             show_error('You are not authorized to access this summary.', 403);
             return;
         }
-        $is_region = $position === 'region';
+        $is_region = in_array($position, array('region', 'admin'), true);
         $scope = array('type' => $is_region ? 'region' : 'division',
             'id' => (int) ($is_region ? $this->session->region : $this->session->division));
-        if ($position === 'district') {
-            $scope = $this->district_learning_gap_scope();
-        }
         if ($scope['id'] <= 0) {
             show_error('Your account has no assigned reporting scope.', 403);
             return;
         }
         $grade = trim((string) $this->input->get('grade_level', true));
+        $scope['learning_area'] = 'Filipino';
         $data = $this->Page_model->learning_gap_school_competency_summary($scope, $grade);
         $data['title'] = 'Learning Gap Summary';
         $data['grade_filter'] = $grade;
@@ -1112,20 +1521,14 @@ class Pages extends CI_Controller
     public function learning_gap_archives()
     {
         $position = (string) $this->session->position;
-        $scope = array('type' => 'school', 'id' => (string) $this->session->username);
-        if (in_array($position, array('division', 'division_head'), true)) {
+        $scope = array('type' => 'region', 'id' => (int) $this->session->region);
+        if (in_array($position, array('division', 'division_head', 'ict'), true)) {
             $scope = array('type' => 'division', 'id' => (int) $this->session->division);
-        } elseif ($position === 'region') {
-            $scope = array('type' => 'region', 'id' => (int) $this->session->region);
-        }
-
-        if ($position === 'district') {
-            $scope = $this->district_learning_gap_scope();
         }
 
         $data['title'] = 'Archived Learning Gap Records';
         $data['archive_years'] = $this->Page_model->learning_gap_archive_years($scope);
-        $data['is_school'] = $position === 'school';
+        $data['is_school'] = false;
         $data['current_year'] = (int) date('Y');
 
         $this->load->view('templates/header');
@@ -1142,23 +1545,21 @@ class Pages extends CI_Controller
         }
 
         $position = (string) $this->session->position;
-        if (!in_array($position, array('school', 'division', 'division_head', 'region', 'admin', 'district'), true)) {
+        if (!in_array($position, array('division', 'division_head', 'ict', 'region', 'admin'), true)) {
             show_error('You are not authorized to access learning gap records.', 403);
         }
 
-        $scope = array('type' => 'school', 'id' => (string) $this->session->username);
-        if (in_array($position, array('division', 'division_head'), true)) {
+        $scope = array('type' => 'region', 'id' => (int) $this->session->region);
+        if (in_array($position, array('division', 'division_head', 'ict'), true)) {
             $scope = array('type' => 'division', 'id' => (int) $this->session->division);
-        } elseif (in_array($position, array('region', 'admin'), true)) {
-            $scope = array('type' => 'region', 'id' => (int) $this->session->region);
         }
 
-        if ($position === 'district') {
-            $scope = $this->district_learning_gap_scope();
-        }
+        // This Filipino workspace keeps its subject scope on the server.
+        $scope['learning_area'] = 'Filipino';
 
         $data['title'] = 'Submitted Learning Gap Records';
-        $data['is_school'] = $position === 'school';
+        $data['is_school'] = false;
+        $data['is_division_user'] = in_array($position, array('division', 'division_head', 'ict'), true);
         $requested_year = (int) $this->input->get('year', true);
         if ($requested_year !== 0 && ($requested_year < 2000 || $requested_year > (int) date('Y') + 1)) {
             show_error('The requested archive year is invalid.', 400);
@@ -1171,7 +1572,7 @@ class Pages extends CI_Controller
         $data['division_filter'] = $scope['type'] === 'region'
             ? (int) $this->input->get('division_id', true)
             : 0;
-        $data['learning_area_filter'] = trim((string) $this->input->get('learning_area', true));
+        $data['learning_area_filter'] = 'Filipino';
         $data['term_filter'] = trim((string) $this->input->get('term', true));
         $data['competency_filter'] = trim((string) $this->input->get('competency', true));
         $data['has_record_filters'] = $data['division_filter'] > 0
@@ -1228,31 +1629,10 @@ class Pages extends CI_Controller
         $this->load->view('templates/footer_basic');
     }
 
-    /** Division-only school submission coverage for Learning Gap Monitoring. */
+    /** School-level submission tracking has been retired with school sign-in. */
     public function school_submission_monitoring()
     {
-        if (!$this->session->logged_in || $this->session->position !== 'division') {
-            show_error('Only division users can access school submission monitoring.', 403);
-        }
-
-        $data['title'] = 'School Submission Monitoring';
-        $data['schools'] = $this->Page_model->learning_gap_school_submission_summary(
-            (int) $this->session->division
-        );
-        $data['submitted_school_count'] = count(array_filter($data['schools'], function ($school) {
-            return (int) $school->record_count > 0;
-        }));
-        $data['total_school_count'] = count($data['schools']);
-        $data['division'] = $this->Page_model->one_cond_row(
-            'division',
-            'id',
-            (int) $this->session->division
-        );
-
-        $this->load->view('templates/header_dt');
-        $this->load->view('templates/menu');
-        $this->load->view('pages/school_submission_monitoring', $data);
-        $this->load->view('templates/footer_dt');
+        redirect('Pages/learning_gap');
     }
 
     /**
@@ -1294,8 +1674,9 @@ class Pages extends CI_Controller
 
     public function learning_gap_save()
     {
-        if (!$this->session->logged_in || $this->session->position !== 'school') {
-            show_error('Only school users can encode learning gap records.', 403);
+        if (!$this->session->logged_in
+            || !in_array($this->session->position, array('division', 'division_head', 'ict'), true)) {
+            show_error('Only division users can encode Learning Gap summaries.', 403);
         }
         $this->require_post();
         if ((int) $this->session->fy < (int) date('Y')) {
@@ -1308,10 +1689,6 @@ class Pages extends CI_Controller
         $this->form_validation->set_rules('term', 'Trimester', 'trim|required|max_length[50]');
         $this->form_validation->set_rules('class_proficiency_level', 'Class Proficiency Level', 'trim|numeric|greater_than_equal_to[0]|less_than_equal_to[100]');
         $this->form_validation->set_rules('proficiency_level', 'Proficiency Level', 'trim|max_length[100]');
-        if ($this->Page_model->school_summative_cpl_enabled((string) $this->session->username)) {
-            $this->form_validation->set_rules('cpl_summative_1', 'CPL - Summative 1', 'trim|numeric|greater_than_equal_to[0]|less_than_equal_to[100]');
-            $this->form_validation->set_rules('cpl_summative_2', 'CPL - Summative 2', 'trim|numeric|greater_than_equal_to[0]|less_than_equal_to[100]');
-        }
         $this->form_validation->set_rules('learners_assessed', 'Number of Learners Assessed', 'trim|required|integer|greater_than_equal_to[0]');
         $this->form_validation->set_rules('learners_with_gap', 'Number of Learners with Learning Gap', 'trim|required|integer|greater_than_equal_to[0]');
 
@@ -1340,21 +1717,26 @@ class Pages extends CI_Controller
         }
 
         $is_update = (int) $this->input->post('record_id', true) > 0;
-        if (!$this->Page_model->save_learning_gap_record((string) $this->session->username)) {
-            $this->session->set_flashdata('danger', 'Your school profile is not set up. Please contact your division administrator.');
+        $division_id = (int) $this->session->division;
+        if (!$this->Page_model->save_learning_gap_record(
+            $this->learning_gap_division_key($division_id),
+            $division_id
+        )) {
+            $this->session->set_flashdata('danger', 'Your account has no valid division assignment. Contact your Division Office administrator.');
             redirect('Pages/learning_gap');
             return;
         }
         $this->session->set_flashdata('success', $is_update
-            ? 'Learning gap record updated for your school account.'
-            : 'Learning gap record saved for your school account.');
+            ? 'Learning Gap summary updated for your division.'
+            : 'Learning Gap summary saved for your division.');
         redirect('Pages/learning_gap');
     }
 
     public function learning_gap_delete()
     {
-        if (!$this->session->logged_in || $this->session->position !== 'school') {
-            show_error('Only school users can remove learning gap records.', 403);
+        if (!$this->session->logged_in
+            || !in_array($this->session->position, array('division', 'division_head', 'ict'), true)) {
+            show_error('Only division users can remove Learning Gap summaries.', 403);
         }
 
         $this->require_post();
@@ -1366,8 +1748,11 @@ class Pages extends CI_Controller
         if ($id < 1) {
             show_404();
         }
-        $this->Page_model->delete_learning_gap_record($id, (string) $this->session->username);
-        $this->session->set_flashdata('success', 'Learning gap record removed.');
+        $this->Page_model->delete_learning_gap_record(
+            $id,
+            $this->learning_gap_division_key((int) $this->session->division)
+        );
+        $this->session->set_flashdata('success', 'Learning Gap summary removed.');
         redirect('Pages/learning_gap');
     }
 
@@ -1686,10 +2071,12 @@ class Pages extends CI_Controller
         // Fetch all users for client-side DataTables
         if ($this->session->position === 'district') {
             $this->apply_district_user_scope();
-            $data['users'] = $this->db->get('users')->result();
+            $data['users'] = array();
             $data['title'] = 'District User List';
         } else {
-            $data['users'] = $this->Page_model->no_cond('users');
+            $data['users'] = $this->db
+                ->where_in('position', array('admin', 'region', 'division', 'division_head', 'ict'))
+                ->get('users')->result();
         }
 
         $this->load->view('templates/header_dt');
@@ -1718,6 +2105,10 @@ class Pages extends CI_Controller
         if ($this->is_division_user_manager()) {
             $this->db->where('p_id', (int) $this->session->division);
         }
+        $managed_positions = $this->is_division_user_manager()
+            ? array('division_head', 'ict')
+            : array('admin', 'region', 'division', 'division_head', 'ict');
+        $this->db->where_in('position', $managed_positions);
 
         if ($this->session->position === 'district') {
             $this->apply_district_user_scope();
@@ -1817,7 +2208,12 @@ class Pages extends CI_Controller
         $data['title'] = "Division User List";
         $data['division_scope'] = true;
 
-        $data['users'] = $this->Page_model->one_cond('users','p_id',$this->session->division);
+        $data['users'] = array_values(array_filter(
+            $this->Page_model->one_cond('users', 'p_id', $this->session->division),
+            function ($user) {
+                return $this->is_allowed_managed_position($user->position);
+            }
+        ));
 
         $this->load->view('templates/header_dt');
         $this->load->view('templates/menu');
@@ -2143,7 +2539,12 @@ class Pages extends CI_Controller
                 ));
                 $data['districts'] = $this->Page_model->one_cond('district', 'division_id', $this->session->division);
             }else{
-                $data['pos'] = $this->Page_model->no_cond('position');  
+                $data['pos'] = array_values(array_filter(
+                    $this->Page_model->no_cond('position'),
+                    function ($position) {
+                        return $this->is_allowed_managed_position($position->pos);
+                    }
+                ));
             }
 
 
@@ -2394,7 +2795,7 @@ class Pages extends CI_Controller
     {
 
         $this->form_validation->set_error_delimiters('<div class="error">', '</div>');
-        $this->form_validation->set_rules('username', 'School ID, username or email address', 'trim|required');
+        $this->form_validation->set_rules('username', 'Division username or email address', 'trim|required');
         $this->form_validation->set_rules('password', 'Password', 'required');
 
         if ($this->form_validation->run() == FALSE) {
@@ -4445,19 +4846,7 @@ class Pages extends CI_Controller
 
     public function signup_email_available()
     {
-        if ($this->input->method() !== 'post') {
-            show_error('POST required.', 405);
-            return;
-        }
-        $email = $this->input->post('email');
-        $email = is_string($email) ? trim($email) : '';
-        $valid = strlen($email) <= 254 && filter_var($email, FILTER_VALIDATE_EMAIL);
-        $available = $valid && $this->db->group_start()->where('email', $email)
-            ->or_where('username', $email)->group_end()->count_all_results('users') === 0;
-        $this->output->set_header('Cache-Control: no-store, private')->set_content_type('application/json')
-            ->set_output(json_encode(array('available' => (bool) $available,
-                'message' => !$valid ? 'Enter a valid email address.' : ($available
-                    ? 'Email address is available.' : 'This email address is already registered.'))));
+        show_error('Self-service account registration is disabled.', 410);
     }
 
     private function render_school_signup($error = '', $show_validation = true, $account_saved = false)
@@ -4477,10 +4866,20 @@ class Pages extends CI_Controller
 
     public function signup()
     {
+        show_error('Self-service account registration is disabled. Contact your Division Office to request access.', 410);
+    }
 
-        $this->form_validation->set_error_delimiters('<div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        ', '</div>');
+    public function signup_district()
+    {
+        show_error('District accounts are no longer available.', 410);
+    }
+
+    /*
+     * Retained below for the historical registration implementation but no
+     * longer reachable; school profiles are managed independently of accounts.
+     */
+    private function legacy_school_signup_disabled()
+    {
         $this->form_validation->set_rules('schoolID', 'School ID', 'trim|required|max_length[45]|regex_match[/^[A-Za-z0-9._-]+$/]|is_unique[schools.schoolID]|is_unique[users.username]');
         $this->form_validation->set_rules('password', 'Password', 'required|min_length[8]|max_length[128]');
         $this->form_validation->set_rules('schoolName', 'School Name', 'trim|required|max_length[255]');
@@ -4548,13 +4947,11 @@ class Pages extends CI_Controller
         }
     }
 
-
-    public function signup_district()
+    private function legacy_district_signup_disabled()
     {
+        show_error('District accounts are no longer available.', 410);
+        return;
 
-        $this->form_validation->set_error_delimiters('<div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        ', '</div>');
         $this->form_validation->set_rules('schoolID', 'Username', 'trim|required|max_length[45]|regex_match[/^[A-Za-z0-9._-]+$/]');
         $this->form_validation->set_rules('password', 'Password', 'required|min_length[12]|max_length[128]');
         $this->form_validation->set_rules('schoolEmail', 'Email', 'trim|required|valid_email|max_length[254]');
@@ -4990,22 +5387,13 @@ class Pages extends CI_Controller
             show_404();
         }
 
-        $data['title'] = "Profile List";
+        $data['title'] = "District and School Directory";
 
         $data['district'] = $this->Page_model->one_cond('district','division_id',$this->session->division);
-        $overview = $this->Page_model->division_account_overview($this->session->division);
+        $overview = $this->Page_model->division_directory_overview($this->session->division);
         $data['schools_by_district'] = $overview['schools_by_district'];
-        $data['school_usernames'] = $overview['school_usernames'];
-        $data['school_account_ids'] = $overview['school_account_ids'];
-        $data['district_user_counts'] = $overview['district_user_counts'];
         $data['school_count'] = $overview['school_count'];
         $data['division'] = $this->Page_model->get_division_setup($this->session->division);
-        $data['encoded_total_schools'] = !empty($data['division']->total_schools)
-            ? (int) $data['division']->total_schools
-            : 0;
-        $data['signup_percentage'] = $data['encoded_total_schools'] > 0
-            ? ($data['school_count'] / $data['encoded_total_schools']) * 100
-            : 0;
 
         $this->load->view('templates/header_dt');
         $this->load->view('templates/menu');
@@ -5494,38 +5882,7 @@ class Pages extends CI_Controller
 
     public function district_userlist_by_division()
     {
-        $this->require_user_manager();
-        if ($this->session->position === 'district') {
-            $this->userlist();
-            return;
-        }
-
-        $page = "user_list";
-
-        if (!file_exists(APPPATH . 'views/pages/' . $page . '.php')) {
-            show_404();
-        }
-
-        $id = $this->uri->segment(3);
-        $this->validate_managed_district($id);
-        $district = $this->Page_model->one_cond_row('district', 'id', $id);
-
-        if (!$district) {
-            show_404();
-        }
-
-        $data['title'] = "District User Accounts";
-        $data['division_scope'] = true;
-        $data['district_user_scope'] = true;
-        $data['district'] = $district;
-        $data['district_user_back_url'] = base_url() . 'pages/district_account/' . rawurlencode($district->division_id);
-        $data['users'] = $this->Page_model->two_cond('users','position','district','d_id',$id);
-
-        $this->load->view('templates/header_dt');
-        $this->load->view('templates/menu');
-        $this->load->view('pages/' . $page, $data);
-        $this->load->view('templates/footer');
-        $this->load->view('templates/footer_dt');
+        show_error('District user accounts are no longer available.', 410);
     }
 
     function update_tana_summary()
@@ -5597,29 +5954,9 @@ class Pages extends CI_Controller
 		}
 
     function add_school_user()
-		{
-		$this->require_post();
-	        $school_id = trim((string) $this->input->post('school_id', true));
-	        $school = $this->Page_model->one_cond_row('schools', 'schoolID', $school_id);
-	        $this->require_school_scope($school);
-	        if ($this->Page_model->one_cond_row('users', 'username', $school_id)) {
-	            $this->session->set_flashdata('danger', 'This school already has an account.');
-	            redirect(base_url() . 'pages/district_account/' . (int) $school->division_id);
-	            return;
-	        }
-
-	        $temporary_password = $this->Page_model->random_password();
-		$this->Page_model->add_school_user(
-		    $school_id,
-		    (string) $school->schoolName,
-		    (int) $school->district_id,
-		    (int) $school->division_id,
-		    $temporary_password
-		);
-		$this->session->set_flashdata('success', 'School account created. Temporary password: <strong><code>'
-		    . html_escape($temporary_password) . '</code></strong>');
-		redirect(base_url() . 'pages/district_account/' . (int) $school->division_id);
-		}
+    {
+        show_error('School user accounts are no longer available.', 410);
+    }
     
 
 

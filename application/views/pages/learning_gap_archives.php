@@ -69,7 +69,7 @@ $overall_gap_rate = $total_assessed > 0 ? ($total_with_gap / $total_assessed) * 
                         <div class="archive-year-stats<?= $is_school ? ' is-school' : ''; ?>">
                             <div><strong><?= number_format((int) $year_row->record_count); ?></strong><span>Records</span></div>
                             <?php if (!$is_school) : ?>
-                                <div><strong><?= number_format((int) $year_row->school_count); ?></strong><span>Schools</span></div>
+                                <div><strong><?= number_format((int) $year_row->school_count); ?></strong><span>Reporting divisions</span></div>
                             <?php endif; ?>
                             <div><strong><?= number_format($assessed); ?></strong><span>Assessed</span></div>
                             <div><strong><?= $assessed > 0 ? number_format($gap_rate, 1) . '%' : '—'; ?></strong><span>Gap rate</span></div>

@@ -1145,7 +1145,6 @@ $filipino_supervisors = array(
             <a href="#process">Paraan</a>
             <a href="#governance">Pamamahala</a>
             <a href="#authors">Mga May-akda</a>
-            <a href="<?= base_url('signup'); ?>">Pag-sign up</a>
             <a class="nav-signin" href="#portal">Mag-sign in</a>
         </nav>
     </header>
@@ -1157,12 +1156,12 @@ $filipino_supervisors = array(
                     <span class="eyebrow">Asignaturang Filipino · Pagsubaybay sa Pagkatuto</span>
                     <h1 id="hero-title">FILIPINO <span>DATAHUB</span></h1>
                     <p class="hero-lead">Datos ng pagkatuto, gabay sa mas makabuluhang pagtuturo.</p>
-                    <p class="hero-description">Isang pinagsasaluhang sistema para subaybayan ang pag-unlad sa Filipino, makita ang mga pangangailangan sa pagkatuto, at gabayan ang angkop na suporta para sa bawat mag-aaral.</p>
+                    <p class="hero-description">Isang pinagsasaluhang sistema para sa mga Division Office na mag-encode ng pinagsama-samang datos sa pagkatuto, at para sa Regional Office na sumubaybay sa mga resulta at pangangailangan sa bawat dibisyon.</p>
                     <div class="hero-actions">
                         <a class="button button-gold" href="#about">Kilalanin ang Datahub <span aria-hidden="true">→</span></a>
                         <a class="button button-outline" href="#portal">Mag-sign in sa portal</a>
                     </div>
-                    <p class="hero-note">Para sa mga awtorisadong account ng FILIPINO DATAHUB</p>
+                    <p class="hero-note">Para sa awtorisadong Division at Regional Office accounts. Division users ang mag-e-encode ng summary; walang direktang school access.</p>
                 </div>
 
                 <aside class="insight-card" aria-label="Buod ng paraan ng paggamit ng datos">
@@ -1278,7 +1277,7 @@ $filipino_supervisors = array(
             <div class="portal-copy">
                 <p class="section-kicker">Portal access</p>
                 <h2>Handa nang magpatuloy?</h2>
-                <p>Mag-sign in gamit ang iyong School ID, username, o email at password upang buksan ang mga tool na nakatalaga sa iyong account.</p>
+                <p>Mag-sign in gamit ang iyong Division username o email at password upang buksan ang mga tool na nakatalaga sa iyong account.</p>
             </div>
             <div class="portal-card">
                 <div class="flag-stripe" aria-hidden="true"></div>
@@ -1297,7 +1296,7 @@ $filipino_supervisors = array(
 
                     <?= form_open('log_in'); ?>
                         <div class="field">
-                            <label for="username">School ID, username, o email</label>
+                            <label for="username">Division username o email</label>
                             <input id="username" name="username" type="text" value="<?= html_escape(set_value('username')); ?>" autocomplete="username" required>
                         </div>
                         <div class="field">
@@ -1307,7 +1306,7 @@ $filipino_supervisors = array(
                         <a class="forgot" href="<?= base_url('Pages/forgot_password'); ?>">Nakalimutan ang password?</a>
                         <button class="submit" type="submit">Magpatuloy</button>
                     <?= form_close(); ?>
-                    <p class="signup-note">Wala pang account? <a href="<?= base_url('signup'); ?>">Alamin ang tungkol sa pag-sign up</a></p>
+                    <p class="signup-note">Para sa account access, makipag-ugnayan sa iyong Division Office administrator.</p>
                 </div>
             </div>
         </section>
