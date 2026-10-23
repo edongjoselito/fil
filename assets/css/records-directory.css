@@ -1,16 +1,16 @@
 /* Submitted Learning Gap Records (/Pages/learning_gap_records).
    Shares the llcm theme tokens with the rest of the system. */
 .rec-page {
-    --rec-navy: var(--llcm-navy, #123d61);
-    --rec-blue: var(--llcm-blue, #2877a9);
-    --rec-sky: var(--llcm-sky, #eaf5fc);
-    --rec-line: var(--llcm-border, #d7e5ef);
-    --rec-ink: var(--llcm-ink, #233342);
-    --rec-muted: #6b7f92;
-    --rec-faint: #9db2c4;
-    --rec-amber: #9a6b1f;
-    --rec-radius: 14px;
-    --rec-shadow: 0 4px 16px rgba(20, 62, 94, .05);
+    --rec-navy: #082b4c;
+    --rec-blue: #0038a8;
+    --rec-sky: #edf3ff;
+    --rec-line: #d7e0ee;
+    --rec-ink: #1d2e40;
+    --rec-muted: #647487;
+    --rec-faint: #8092a5;
+    --rec-amber: #a96500;
+    --rec-radius: 16px;
+    --rec-shadow: 0 8px 22px rgba(18, 63, 99, .07);
     margin-bottom: 28px;
     color: var(--rec-ink);
 }
@@ -19,17 +19,23 @@
 
 /* ---------- Page header ---------- */
 .rec-header {
+    position: relative;
+    overflow: hidden;
     display: flex;
     flex-wrap: wrap;
     gap: 18px;
     align-items: flex-end;
     justify-content: space-between;
     margin: 18px 0 20px;
-    padding: 24px 26px;
-    border-radius: var(--rec-radius);
+    padding: 34px 36px;
+    border-radius: 20px;
     color: #fff;
-    background: linear-gradient(118deg, var(--rec-navy), var(--rec-blue));
+    background: linear-gradient(125deg, var(--rec-navy), var(--rec-blue));
+    box-shadow: 0 16px 36px rgba(18, 63, 99, .20);
 }
+.rec-header::before { position:absolute; inset:0 auto 0 0; width:6px; background:linear-gradient(to bottom,var(--rec-blue) 0 40%,#f0aa20 40% 60%,#ce1126 60% 100%); content:""; }
+.rec-header::after { position:absolute; right:-90px; bottom:-180px; width:320px; height:320px; border:40px solid rgba(255,255,255,.12); border-radius:50%; content:""; }
+.rec-header>div,.rec-header-actions { position:relative; z-index:1; }
 .rec-eyebrow {
     display: block;
     margin-bottom: 6px;
@@ -50,6 +56,7 @@
 .rec-header-actions .btn { font-size: .88rem; font-weight: 600; }
 .rec-header-actions .btn-light { color: var(--rec-navy); }
 .rec-header-actions .btn-outline-light { border-color: rgba(255, 255, 255, .55); }
+.rec-header-actions .btn-light { color:var(--rec-navy); }
 
 /* ---------- Summary tiles ---------- */
 .rec-metrics {
@@ -64,6 +71,7 @@
     border-radius: var(--rec-radius);
     background: #fff;
     box-shadow: var(--rec-shadow);
+    border:0;
 }
 .rec-metric-label {
     display: block;
@@ -87,7 +95,7 @@
 /* ---------- Cards ---------- */
 .rec-card {
     margin-bottom: 20px;
-    border: 1px solid var(--rec-line);
+    border: 0;
     border-radius: var(--rec-radius);
     background: #fff;
     box-shadow: var(--rec-shadow);
@@ -100,6 +108,7 @@
     justify-content: space-between;
     padding: 18px 22px;
     border-bottom: 1px solid var(--rec-line);
+    background:#fbfdfe;
 }
 .rec-card-head h2 { margin: 0; color: var(--rec-navy); font-size: 1.08rem; font-weight: 600; }
 .rec-card-head p {
@@ -130,6 +139,11 @@
 .rec-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .rec-field label { margin: 0; color: var(--rec-navy); font-size: .82rem; font-weight: 600; }
 .rec-field .custom-select, .rec-field .form-control { width: 100%; border-color: #cbd9e5; }
+.rec-page .form-control:focus,.rec-page .custom-select:focus { border-color:var(--rec-blue); box-shadow:0 0 0 3px rgba(0,56,168,.14); }
+.rec-page .btn-primary { border-color:var(--rec-blue); background:var(--rec-blue); }
+.rec-page .btn-primary:hover { border-color:var(--rec-navy); background:var(--rec-navy); }
+.rec-page .btn-outline-primary { border-color:var(--rec-blue); color:var(--rec-blue); }
+.rec-page .btn-outline-primary:hover { color:#fff; background:var(--rec-blue); }
 .rec-filter-actions {
     grid-column: 1 / -1;
     display: flex;
@@ -159,6 +173,7 @@
     font-weight: 600;
     overflow-wrap: anywhere;
 }
+.rec-page :focus-visible { outline:3px solid var(--rec-blue); outline-offset:3px; }
 
 /* ---------- Record list ---------- */
 .rec-list { margin: 0; padding: 0; list-style: none; }
@@ -271,7 +286,7 @@
     .rec-identity { grid-column: 1 / -1; }
 }
 @media (max-width: 767.98px) {
-    .rec-header { padding: 20px; }
+    .rec-header { padding: 25px 23px; }
     .rec-header h1 { font-size: 1.32rem; }
     .rec-header-actions { width: 100%; }
     .rec-header-actions .btn { flex: 1 1 auto; }

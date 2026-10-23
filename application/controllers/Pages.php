@@ -297,12 +297,17 @@ class Pages extends CI_Controller
 
     private function is_user_manager()
     {
-        return in_array($this->session->position, array('admin', 'division', 'ict', 'district'), true);
+        return in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true);
     }
 
     private function is_division_user_manager()
     {
         return in_array($this->session->position, array('division', 'ict'), true);
+    }
+
+    private function is_region_user_manager()
+    {
+        return $this->session->position === 'region';
     }
 
     private function require_user_manager()
@@ -694,6 +699,10 @@ class Pages extends CI_Controller
             show_error('You can only manage users under your division.', 403);
         }
 
+        if ($this->is_region_user_manager() && (int) $user->r_id !== (int) $this->session->region) {
+            show_error('You can only manage users under your region.', 403);
+        }
+
         if ($this->session->position === 'district') {
             $scope = $this->district_learning_gap_scope();
             if ((int) $user->d_id !== $scope['id']
@@ -710,6 +719,10 @@ class Pages extends CI_Controller
         $retained_positions = array('admin', 'region', 'division', 'division_head', 'ict');
         if ($this->session->position === 'admin') {
             return in_array($position, $retained_positions, true);
+        }
+
+        if ($this->is_region_user_manager()) {
+            return in_array($position, array('region', 'division', 'division_head', 'ict'), true);
         }
 
         if ($this->session->position === 'district') {
@@ -735,6 +748,17 @@ class Pages extends CI_Controller
 
         if (!$district || (string) $district->division_id !== (string) $this->session->division) {
             show_error('The selected district is not under your division.', 403);
+        }
+    }
+
+    private function validate_managed_region_division($division_id)
+    {
+        if (!$this->is_region_user_manager() || empty($division_id)) {
+            return;
+        }
+        $division = $this->Page_model->one_cond_row('division', 'id', $division_id);
+        if (!$division || (int) $division->region_id !== (int) $this->session->region) {
+            show_error('The selected division is not under your region.', 403);
         }
     }
 
@@ -2067,6 +2091,7 @@ class Pages extends CI_Controller
 
         $data['title'] = "User List";
         $data['division_scope'] = false;
+        $data['region_scope'] = $this->is_region_user_manager();
 
         // Fetch all users for client-side DataTables
         if ($this->session->position === 'district') {
@@ -2074,9 +2099,13 @@ class Pages extends CI_Controller
             $data['users'] = array();
             $data['title'] = 'District User List';
         } else {
-            $data['users'] = $this->db
-                ->where_in('position', array('admin', 'region', 'division', 'division_head', 'ict'))
-                ->get('users')->result();
+            $this->db->where_in('position', $this->is_region_user_manager()
+                ? array('region', 'division', 'division_head', 'ict')
+                : array('admin', 'region', 'division', 'division_head', 'ict'));
+            if ($this->is_region_user_manager()) {
+                $this->db->where('r_id', (int) $this->session->region);
+            }
+            $data['users'] = $this->db->get('users')->result();
         }
 
         $this->load->view('templates/header_dt');
@@ -2105,9 +2134,14 @@ class Pages extends CI_Controller
         if ($this->is_division_user_manager()) {
             $this->db->where('p_id', (int) $this->session->division);
         }
+        if ($this->is_region_user_manager()) {
+            $this->db->where('r_id', (int) $this->session->region);
+        }
         $managed_positions = $this->is_division_user_manager()
             ? array('division_head', 'ict')
-            : array('admin', 'region', 'division', 'division_head', 'ict');
+            : ($this->is_region_user_manager()
+                ? array('region', 'division', 'division_head', 'ict')
+                : array('admin', 'region', 'division', 'division_head', 'ict'));
         $this->db->where_in('position', $managed_positions);
 
         if ($this->session->position === 'district') {
@@ -2207,6 +2241,7 @@ class Pages extends CI_Controller
 
         $data['title'] = "Division User List";
         $data['division_scope'] = true;
+        $data['region_scope'] = false;
 
         $data['users'] = array_values(array_filter(
             $this->Page_model->one_cond('users', 'p_id', $this->session->division),
@@ -2523,7 +2558,7 @@ class Pages extends CI_Controller
             }
 
             $data['title'] = "New User";
-            $data['division'] = $this->Page_model->one_cond('division', 'region_id', 12);
+            $data['division'] = $this->Page_model->one_cond('division', 'region_id', $this->is_region_user_manager() ? (int) $this->session->region : 12);
             if ($this->session->position === 'district') {
                 $this->district_learning_gap_scope();
                 $data['pos'] = array_values(array_filter($this->Page_model->no_cond('position'), function ($position) {
@@ -2564,6 +2599,7 @@ class Pages extends CI_Controller
             }
 
             $this->validate_managed_district($this->input->post('d_id'));
+            $this->validate_managed_region_division($this->input->post('division_id'));
 
             $config['allowed_types'] = 'jpg|png';
             $config['upload_path'] = './uploads/';
@@ -2613,6 +2649,7 @@ class Pages extends CI_Controller
             $this->load->view('templates/footer_basic');
         } else {
             $this->get_managed_user($this->input->post('id'));
+            $this->validate_managed_region_division($this->input->post('division_id'));
             $this->Page_model->user_update();
             $this->session->set_flashdata('success', 'Successfully saved.');
             redirect(base_url() . ($this->is_division_user_manager() ? 'pages/userlist_division' : 'pages/userlist'));

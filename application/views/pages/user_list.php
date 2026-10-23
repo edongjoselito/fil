@@ -1,5 +1,5 @@
                         <?php
-                            $themed_user_scope = !empty($division_scope) || !empty($district_user_scope);
+                            $themed_user_scope = !empty($division_scope) || !empty($district_user_scope) || !empty($region_scope);
                             $is_division_user_scope = !empty($division_scope) && empty($district_user_scope);
                             $district_name = !empty($district) ? mb_convert_case($district->description, MB_CASE_TITLE, 'UTF-8') : 'District';
                             $district_user_back_url = !empty($district_user_back_url) ? $district_user_back_url : base_url();
@@ -362,6 +362,58 @@
                                     justify-content: center;
                                 }
                             }
+
+                            .user-list-page.division-scope {
+                                --ul-primary: #0038a8;
+                                --ul-primary-light: #082b4c;
+                                --ul-accent: #f0aa20;
+                                --ul-ink: #1d2e40;
+                                --ul-muted: #647487;
+                                --ul-border: #d7e0ee;
+                                --ul-surface: #edf3ff;
+                            }
+                            .user-list-page.division-scope .user-list-hero {
+                                position: relative;
+                                overflow: hidden;
+                                padding: 34px 36px;
+                                border-radius: 20px;
+                                background: linear-gradient(125deg, #082b4c, #0038a8);
+                                box-shadow: 0 16px 36px rgba(18, 63, 99, .20);
+                            }
+                            .user-list-page.division-scope .user-list-hero::before {
+                                position: absolute;
+                                inset: 0 auto 0 0;
+                                z-index: 1;
+                                width: 6px;
+                                background: linear-gradient(to bottom, #0038a8 0 40%, #f0aa20 40% 60%, #ce1126 60% 100%);
+                                content: '';
+                            }
+                            .user-list-page.division-scope .user-list-hero::after {
+                                display: block;
+                                right: -90px;
+                                bottom: -180px;
+                                width: 320px;
+                                height: 320px;
+                                border: 40px solid rgba(255, 255, 255, .12);
+                                background: transparent;
+                            }
+                            .user-list-page.division-scope .hero-eyebrow { color: #ffe09a; }
+                            .user-list-page.division-scope .workspace-panel {
+                                border: 0;
+                                border-radius: 16px;
+                                box-shadow: 0 8px 22px rgba(18, 63, 99, .07);
+                            }
+                            .user-list-page.division-scope .workspace-panel-header { background: #fbfdfe; }
+                            .user-list-page.division-scope .workspace-panel-header h4 { color: #082b4c; }
+                            .user-list-page.division-scope .user-list-table thead th { background: #edf3ff; color: #405a78; }
+                            .user-list-page.division-scope .user-list-table tbody tr:hover td { background: #f8fbff; }
+                            .user-list-page.division-scope .account-avatar { background: linear-gradient(135deg, #0038a8, #082b4c); }
+                            .user-list-page.division-scope .account-level { color: #0038a8; background: #edf3ff; }
+                            .user-list-page.division-scope .hero-button-primary { color: #082b4c; }
+                            .user-list-page.division-scope .pagination-wrapper span.active { background: linear-gradient(135deg, #0038a8, #082b4c); }
+                            @media (max-width: 767.98px) {
+                                .user-list-page.division-scope .user-list-hero { padding: 26px; }
+                            }
                         </style>
 
                         <div class="user-list-page <?= $is_division_user_scope ? 'division-scope' : ''; ?>">
@@ -372,12 +424,12 @@
                                         <i class="mdi mdi-account-group-outline"></i>
                                         User Management
                                     </span>
-                                    <h1><?= !empty($district_user_scope) ? 'District User Accounts' : (!empty($division_scope) ? 'Division User Accounts' : 'User List'); ?></h1>
-                                    <p><?= !empty($district_user_scope) ? 'Manage district user accounts assigned to ' . html_escape($district_name) . '.' : (!empty($division_scope) ? 'Create and maintain accounts assigned to your division.' : 'Manage system user accounts and access levels.'); ?></p>
+                                    <h1><?= !empty($district_user_scope) ? 'District User Accounts' : (!empty($division_scope) ? 'Division User Accounts' : (!empty($region_scope) ? 'Regional User Accounts' : 'User List')); ?></h1>
+                                    <p><?= !empty($district_user_scope) ? 'Manage district user accounts assigned to ' . html_escape($district_name) . '.' : (!empty($division_scope) ? 'Create and maintain accounts assigned to your division.' : (!empty($region_scope) ? 'Manage accounts assigned to your region.' : 'Manage system user accounts and access levels.')); ?></p>
                                 </div>
                                 <div class="user-list-hero-side">
                                     <div class="hero-actions">
-                                        <?php if(in_array($this->session->position, array('admin', 'division', 'ict', 'district'), true)){ ?>
+                                        <?php if(in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true)){ ?>
                                         <a href="<?= base_url(); ?>pages/user_new" class="hero-button hero-button-primary">
                                             <i class="mdi mdi-account-plus-outline"></i>
                                             Add User
@@ -420,8 +472,8 @@
                         <div class="workspace-panel">
                             <div class="workspace-panel-header">
                                 <div>
-                                    <h4><?= !empty($district_user_scope) ? html_escape($district_name) . ' District Accounts' : (!empty($division_scope) ? 'Division Accounts' : ($this->session->position === 'district' ? 'District Accounts' : 'System Accounts')); ?></h4>
-                                    <p><?= !empty($district_user_scope) ? 'Review and manage district-level user access for this district.' : (!empty($division_scope) ? 'Manage account details, access levels, and passwords.' : 'Manage system user accounts and access levels.'); ?></p>
+                                    <h4><?= !empty($district_user_scope) ? html_escape($district_name) . ' District Accounts' : (!empty($division_scope) ? 'Division Accounts' : (!empty($region_scope) ? 'Regional Accounts' : ($this->session->position === 'district' ? 'District Accounts' : 'System Accounts'))); ?></h4>
+                                    <p><?= !empty($district_user_scope) ? 'Review and manage district-level user access for this district.' : (!empty($division_scope) ? 'Manage account details, access levels, and passwords.' : (!empty($region_scope) ? 'Manage account details, access levels, and passwords within your region.' : 'Manage system user accounts and access levels.')); ?></p>
                                 </div>
                                 <span class="account-level">
                                     <i class="mdi mdi-account-multiple-outline"></i>
@@ -452,7 +504,7 @@
                                                 <td><span class="account-level"><?= html_escape($row->position); ?></span></td>
                                                 <td>
                                                     <div class="user-actions">
-                                                        <?php if(in_array($this->session->position, array('admin', 'division', 'ict', 'district'), true)){ ?>
+                                                        <?php if(in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true)){ ?>
                                                         <a class="btn btn-primary btn-sm" href="<?= base_url(); ?>pages/user_update/<?= $row->id; ?>"><i class="mdi mdi-pencil-outline"></i> Edit</a>
                                                         <?php } ?>
                                                         <?php if($this->session->position == 'admin'){ ?>
@@ -463,7 +515,7 @@
                                                             <input type="hidden" name="id" value="<?= $row->id; ?>">
                                                             <button type="submit" class="btn btn-warning btn-sm waves-effect waves-light"><i class="mdi mdi-lock-reset"></i> Reset</button>
                                                         </form>
-                                                        <?php if(in_array($this->session->position, array('admin', 'division', 'ict', 'district'), true)){ ?>
+                                                        <?php if(in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true)){ ?>
                                                         <?= form_open('pages/user_delete', array('style' => 'display:inline;', 'onsubmit' => "return confirm('Delete this user account?');")); ?>
                                                         <input type="hidden" name="id" value="<?= (int) $row->id; ?>">
                                                         <button type="submit" class="btn btn-danger btn-sm"><i class="mdi mdi-trash-can-outline"></i> Delete</button>
@@ -568,7 +620,7 @@
                                         data: 'id',
                                         render: function(data, type, row) {
                                             var actions = '';
-                                            <?php if(in_array($this->session->position, array('admin', 'division', 'ict', 'district'), true)){ ?>
+                                            <?php if(in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true)){ ?>
                                             actions += '<a class="btn btn-primary btn-sm" href="<?= base_url(); ?>pages/user_update/' + data + '"><i class="mdi mdi-pencil-outline"></i> Edit</a> ';
                                             <?php } ?>
                                             <?php if($this->session->position == 'admin'){ ?>
@@ -579,7 +631,7 @@
                                                 '<input type="hidden" name="id" value="' + data + '">' +
                                                 '<button type="submit" class="btn btn-warning btn-sm waves-effect waves-light"><i class="mdi mdi-lock-reset"></i> Reset</button>' +
                                                 '</form> ';
-                                            <?php if(in_array($this->session->position, array('admin', 'division', 'ict', 'district'), true)){ ?>
+                                            <?php if(in_array($this->session->position, array('admin', 'region', 'division', 'ict', 'district'), true)){ ?>
                                             actions += '<form action="<?= base_url(); ?>pages/user_delete" method="post" style="display:inline" onsubmit="return confirm(\'Delete this user account?\')">' +
                                                 '<input type="hidden" name="<?= html_escape($this->security->get_csrf_token_name()); ?>" value="<?= html_escape($this->security->get_csrf_hash()); ?>">' +
                                                 '<input type="hidden" name="id" value="' + parseInt(data, 10) + '">' +

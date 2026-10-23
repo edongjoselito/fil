@@ -3132,7 +3132,7 @@ private function ensure_crla_schema()
 public function add_learning_area_setting($division_id)
 {
     $grade = trim((string) $this->input->post('grade_level', true));
-    $area = trim((string) $this->input->post('learning_area', true));
+    $area = 'Filipino';
     $exists = $this->db->where('division_id', (int) $division_id)
         ->where('grade_level', $grade)->where('learning_area', $area)
         ->count_all_results('learning_area_settings') > 0;

@@ -1,7 +1,6 @@
 <?php
 /**
- * Regional Learning Area Setup. Defines which learning areas a division's
- * schools can encode against, per grade level.
+ * Regional Filipino learning area setup, per grade level.
  */
 $grades = array(
     'Kindergarten', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6',
@@ -10,6 +9,9 @@ $grades = array(
 
 /* The query orders grade_level alphabetically, which puts "Grade 10" ahead of
    "Grade 2". Group the rows and walk them in curriculum order instead. */
+$areas = array_values(array_filter($areas, function ($area) {
+    return strcasecmp(trim((string) $area->learning_area), 'Filipino') === 0;
+}));
 $areas_by_grade = array();
 foreach ($areas as $area) {
     $areas_by_grade[(string) $area->grade_level][] = $area;
@@ -37,14 +39,6 @@ foreach ($areas as $area) {
     }
 }
 
-$selected_division_name = '';
-foreach ($divisions as $division) {
-    if ((int) $division->id === (int) $selected_division_id) {
-        $selected_division_name = (string) $division->description;
-        break;
-    }
-}
-$setup_url = base_url('Pages/learning_area_setup');
 ?>
 <link rel="stylesheet" href="<?= base_url('assets/css/learning-area-setup.css'); ?>?v=<?= filemtime(FCPATH . 'assets/css/learning-area-setup.css'); ?>">
 
@@ -54,25 +48,12 @@ $setup_url = base_url('Pages/learning_area_setup');
             <span class="la-eyebrow">Regional configuration</span>
             <h1>Learning Area Setup</h1>
             <p class="la-header-meta">
-                <?php if ($selected_division_name !== '') : ?><span><?= html_escape($selected_division_name); ?></span><?php endif; ?>
+                <span>Filipino</span>
                 <span><?= number_format($area_total); ?> learning area<?= $area_total === 1 ? '' : 's'; ?></span>
                 <span><?= number_format($grade_total); ?> grade level<?= $grade_total === 1 ? '' : 's'; ?></span>
             </p>
         </div>
     </header>
-
-    <form class="la-switcher" method="get" action="<?= $setup_url; ?>">
-        <div class="la-switcher-field">
-            <label for="division_id">Division</label>
-            <select id="division_id" name="division_id" class="custom-select" onchange="this.form.submit()">
-                <?php foreach ($divisions as $division) : ?>
-                    <option value="<?= (int) $division->id; ?>" <?= (int) $selected_division_id === (int) $division->id ? 'selected' : ''; ?>><?= html_escape($division->description); ?></option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <button class="btn btn-outline-primary" type="submit">View division</button>
-        <p class="la-switcher-note">Learning areas are configured per division. Competencies encoded against an area are shared across the region.</p>
-    </form>
 
     <?php if ($this->session->flashdata('success')) : ?>
         <div class="la-flash la-flash-success" role="status"><i class="mdi mdi-check-circle-outline" aria-hidden="true"></i><span><?= $this->session->flashdata('success'); ?></span></div>
@@ -84,7 +65,7 @@ $setup_url = base_url('Pages/learning_area_setup');
     <section class="la-card" aria-labelledby="la-add-title">
         <div class="la-card-head">
             <h2 id="la-add-title">Add a learning area</h2>
-            <p>Schools in this division can only encode learning-gap records against the grade level and learning area combinations listed below.</p>
+            <p>Configure Filipino learning areas by grade level for school data entry.</p>
         </div>
         <?= form_open('Pages/learning_area_setup_save', array('class' => 'la-form')); ?>
             <input type="hidden" name="division_id" value="<?= (int) $selected_division_id; ?>">
@@ -98,10 +79,7 @@ $setup_url = base_url('Pages/learning_area_setup');
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="la-field">
-                    <label for="learning_area">Learning area / subject</label>
-                    <input id="learning_area" name="learning_area" class="form-control" placeholder="Filipino" maxlength="150" required>
-                </div>
+                <input type="hidden" id="learning_area" name="learning_area" value="Filipino">
                 <button class="btn btn-primary" type="submit"><i class="mdi mdi-plus" aria-hidden="true"></i> Add to setup</button>
             </div>
         <?= form_close(); ?>
@@ -113,7 +91,7 @@ $setup_url = base_url('Pages/learning_area_setup');
             <span class="la-count"><?= number_format($area_total); ?> configured</span>
             <p>
                 <?php if ($area_total === 0) : ?>
-                    Nothing is configured for this division yet.
+                    No Filipino learning areas are configured yet.
                 <?php elseif ($areas_without_competencies > 0) : ?>
                     <?= number_format($areas_without_competencies); ?> of <?= number_format($area_total); ?> area<?= $area_total === 1 ? '' : 's'; ?> have no competencies encoded yet, so schools cannot select a competency for them.
                 <?php else : ?>
@@ -126,7 +104,7 @@ $setup_url = base_url('Pages/learning_area_setup');
             <div class="la-empty">
                 <i class="mdi mdi-book-open-outline" aria-hidden="true"></i>
                 <h3>No learning areas set up yet</h3>
-                <p>Add a grade level and learning area above to enable school data entry for this division.</p>
+                <p>Add a grade level above to enable Filipino learning data entry.</p>
             </div>
         <?php else : ?>
             <?php foreach ($ordered_grades as $grade) : ?>
@@ -161,7 +139,7 @@ $setup_url = base_url('Pages/learning_area_setup');
                                     </span>
                                     <a class="la-action" href="<?= base_url('Pages/learning_competencies_view/' . (int) $area->id . $query); ?>"><i class="mdi mdi-eye-outline" aria-hidden="true"></i> View</a>
                                     <a class="la-action la-action-primary" href="<?= base_url('Pages/learning_competency_setup/' . (int) $area->id . $query); ?>"><i class="mdi mdi-plus-box-outline" aria-hidden="true"></i> Competencies</a>
-                                    <?= form_open('Pages/learning_area_setup_delete', array('class' => 'la-remove-form', 'onsubmit' => "return confirm('Remove " . html_escape($area->grade_level . ' — ' . $area->learning_area) . " from this division setup?');")); ?>
+                                    <?= form_open('Pages/learning_area_setup_delete', array('class' => 'la-remove-form', 'onsubmit' => "return confirm('Remove " . html_escape($area->grade_level . ' — ' . $area->learning_area) . " from this setup?');")); ?>
                                         <input type="hidden" name="id" value="<?= (int) $area->id; ?>">
                                         <input type="hidden" name="division_id" value="<?= (int) $selected_division_id; ?>">
                                         <button type="submit" class="la-remove" aria-label="Remove <?= html_escape($area->grade_level . ' ' . $area->learning_area); ?>"><i class="mdi mdi-delete-outline" aria-hidden="true"></i></button>

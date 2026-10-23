@@ -336,6 +336,7 @@ if ((string) $this->session->position === 'school') {
                             <li><a href="<?= base_url(); ?>Pages/regional_phil_iri_report" class="waves-effect"><i class="mdi mdi-book-open-page-variant"></i><span> Phil-IRI Regional Report</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/regional_crla_report" class="waves-effect"><i class="mdi mdi-book-open-variant"></i><span> CRLA Regional Report</span></a></li>
                             <li><a href="<?= base_url(); ?>Pages/learning_area_setup" class="waves-effect"><i class="mdi mdi-tune"></i><span> Learning Area Setup</span></a></li>
+                            <li><a href="<?= base_url(); ?>pages/userlist" class="waves-effect"><i class="mdi mdi-account-supervisor"></i><span> Manage Users</span></a></li>
                             <li><a href="#" class="waves-effect" data-toggle="modal" data-target="#renren"><i class="fas fa-lock"></i><span>Change Password</span></a></li>
 
                         <?php } ?>
