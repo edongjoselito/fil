@@ -21,7 +21,7 @@ $submission_meta = array(
     'sgod_action_plan' => array(
         'label' => 'Action Plan',
         'short_label' => 'Action Plan',
-        'description' => 'Schools with encoded action plans for the active fiscal year.',
+        'description' => 'Schools with encoded action plans for the active school year.',
         'icon' => 'mdi-clipboard-check-outline',
         'class' => 'action-plan',
         'url' => 'Pages/sbm_action_plan_pview_district/'
@@ -537,7 +537,7 @@ $participating_district_total = count($participating_district_ids);
                         <h2><i class="mdi <?= html_escape($current_submission['icon']); ?> mr-2"></i><?= html_escape($current_submission['short_label']); ?> Overview</h2>
                         <p>
                             <?= html_escape($current_submission['description']); ?>
-                            This list covers <?= html_escape($format_title($division_name)); ?> for fiscal year <?= html_escape($this->session->fy); ?>.
+                        This list covers <?= html_escape($format_title($division_name)); ?> for school year <?= html_escape(school_year_range($this->session->fy)); ?>.
                         </p>
                     </div>
                     <span class="submission-focus-badge">
@@ -560,7 +560,7 @@ $participating_district_total = count($participating_district_ids);
                         <strong><?= $all_completed_total; ?></strong>
                     </div>
                     <div class="division-stat-card">
-                        <span>Active Fiscal Year</span>
+                        <span>Active School Year</span>
                         <strong><?= html_escape($this->session->fy); ?></strong>
                     </div>
                 </div>
@@ -686,7 +686,7 @@ $participating_district_total = count($participating_district_ids);
                         <div class="division-empty-state">
                             <i class="mdi mdi-file-search-outline"></i>
                             <h5>No submission records found</h5>
-                            <p>There are no schools to display for <?= html_escape($current_submission['short_label']); ?> in fiscal year <?= html_escape($this->session->fy); ?>.</p>
+                            <p>There are no schools to display for <?= html_escape($current_submission['short_label']); ?> in school year <?= html_escape(school_year_range($this->session->fy)); ?>.</p>
                         </div>
                     <?php endif; ?>
                 </div>

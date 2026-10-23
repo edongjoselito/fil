@@ -47,7 +47,7 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
             <h1><?= $is_school ? 'My Learning Gap Records' : 'Submitted Learning Gap Records'; ?></h1>
             <p class="rec-header-meta">
                 <span>Review assessment results and the actions taken against them</span>
-                <span class="rec-num">Fiscal Year <?= (int) $record_year; ?></span>
+                <span class="rec-num">School Year <?= html_escape(school_year_range($record_year)); ?></span>
                 <?php if (!$is_school) : ?><span class="rec-num"><?= number_format($breadth_count); ?> reporting unit<?= $breadth_count === 1 ? '' : 's'; ?></span><?php endif; ?>
             </p>
         </div>
@@ -63,7 +63,7 @@ $breadth_count = $is_school ? count($area_pairs) : count($school_ids);
     <?php if ($is_archive_year) : ?>
         <div class="alert alert-info d-flex align-items-center" role="status">
             <i class="mdi mdi-lock-outline mr-2" aria-hidden="true"></i>
-            <span>You are viewing the read-only archive for Fiscal Year <?= (int) $record_year; ?>.</span>
+            <span>You are viewing the read-only archive for School Year <?= html_escape(school_year_range($record_year)); ?>.</span>
         </div>
     <?php endif; ?>
 

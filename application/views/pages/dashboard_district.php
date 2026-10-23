@@ -818,7 +818,7 @@ $work_queue_cards = array(
             <p class="dd-header-meta">
                 <span><?= $escape($division_name); ?></span>
                 <span><?= (int) $school_total; ?> schools</span>
-                <span>Fiscal Year <?= $escape($this->session->fy); ?></span>
+                <span>School Year <?= $escape(school_year_range($this->session->fy)); ?></span>
             </p>
         </div>
         <div class="dd-header-actions">
@@ -976,7 +976,7 @@ $work_queue_cards = array(
         <div class="dd-panel-head">
             <h4>Self-Assessment Manifestation Counts</h4>
             <span class="dd-tag"><i class="mdi mdi-filter-outline"></i> Click counts to open school lists</span>
-            <p>How many district schools reported each manifestation level for every SBM indicator during the active fiscal year.</p>
+            <p>How many district schools reported each manifestation level for every SBM indicator during the active school year.</p>
         </div>
         <div class="dd-panel-body-padded">
             <div id="districtDashboardAccordion">

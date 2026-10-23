@@ -40,7 +40,7 @@ $division_name = $division && trim((string) $division->description) !== ''
 $district_name = $district && trim((string) $district->description) !== ''
     ? $title_case($district->description)
     : 'Not assigned';
-$fiscal_year_label = 'Fiscal Year ' . $this->session->fy;
+$fiscal_year_label = 'School Year ' . school_year_range($this->session->fy);
 
 $school_initials = '';
 foreach (preg_split('/\s+/', trim($school_name)) as $word) {
@@ -255,7 +255,7 @@ if (!$checklist_record) {
     $next_step = array(
         'eyebrow' => 'Submission complete',
         'title' => 'Use the finalized TA report to support planning',
-        'description' => 'This TA form is already locked for the current fiscal year. Continue with TANA prioritization and the school action plan, or coordinate with the division reviewer if revisions are needed.',
+        'description' => 'This TA form is already locked for the current school year. Continue with TANA prioritization and the school action plan, or coordinate with the division reviewer if revisions are needed.',
         'url' => $tana_url,
         'cta' => 'Open TANA priorities',
         'secondary_url' => $action_plan_url,
@@ -1173,7 +1173,7 @@ if (!$checklist_record) {
                 </a>
                 <a href="#" class="hero-button hero-button-secondary" data-toggle="modal" data-target="#taFiscalYearModal">
                     <i class="mdi mdi-calendar-edit"></i>
-                    Change Fiscal Year
+                    Change School Year
                 </a>
                 <a href="<?= $dashboard_url; ?>" class="hero-button hero-button-tertiary">
                     <i class="mdi mdi-view-dashboard-outline"></i>
@@ -1209,7 +1209,7 @@ if (!$checklist_record) {
         <div class="info-alert">
             <i class="mdi mdi-alert-circle-outline"></i>
             <div>
-                <strong>Checklist basis not found yet for this fiscal year</strong>
+                <strong>Checklist basis not found yet for this school year</strong>
                 <p>The TA form will still accept drafts, but the manifestation-based guidance becomes more precise after the SBM checklist has been completed or updated.</p>
             </div>
         </div>
@@ -1597,7 +1597,7 @@ if (!$checklist_record) {
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="taFiscalYearModalLabel">Change Fiscal Year</h5>
+                    <h5 class="modal-title" id="taFiscalYearModalLabel">Change School Year</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -1605,11 +1605,11 @@ if (!$checklist_record) {
                 <div class="modal-body">
                     <form action="<?= base_url('Pages/change_fy'); ?>" method="post">
                         <input type="hidden" name="<?= html_escape($this->security->get_csrf_token_name()); ?>" value="<?= html_escape($this->security->get_csrf_hash()); ?>">
-                        <label for="taFiscalYear">Fiscal Year</label>
+                        <label for="taFiscalYear">School Year</label>
                         <select id="taFiscalYear" name="new_fy" class="form-control" onchange="this.form.submit()">
                             <?php for ($year = 2023; $year <= 2030; $year++) : ?>
                                 <option value="<?= $year; ?>" <?= (string) $this->session->fy === (string) $year ? 'selected' : ''; ?>>
-                                    <?= $year; ?>
+                                    <?= ($year - 1) . '-' . $year; ?>
                                 </option>
                             <?php endfor; ?>
                         </select>

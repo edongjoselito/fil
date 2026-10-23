@@ -18,7 +18,7 @@ $cpl_record_count = array_sum(array_map(function ($row) { return (int) $row->cpl
 $theme_max_count = !empty($thematic_analysis['themes']) ? max(array_map(function ($theme) { return (int) $theme->record_count; }, $thematic_analysis['themes'])) : 0;
 $div_setup_name = isset($division) && !empty($division->description) ? html_escape($division->description) : '';
 $div_district_count = isset($district_count) ? (int) $district_count : 0;
-$div_fy = isset($this->session->fy) ? (int) $this->session->fy : (int) date('Y');
+$div_fy = isset($this->session->fy) ? (int) $this->session->fy : (int) date('Y') + 1;
 $div_setup_url = base_url('Pages/division_setup');
 $div_districts_url = base_url('pages/district_account/' . (int) $this->session->division);
 $div_schools_url = base_url('pages/schools_division/' . (int) $this->session->division);
@@ -162,9 +162,9 @@ if (!empty($thematic_analysis['themes'])) {
     .lg-interp strong { color:var(--navy); }
 </style>
 <div class="scope-lg division-workspace">
-    <section class="lg-hero"><div class="lg-hero-copy"><span class="lg-eyebrow">FILIPINO DATAHUB · Filipino Subject<?= $div_setup_name !== '' ? ' · ' . $div_setup_name : ''; ?></span><h1>Division Dashboard</h1><p>Review Filipino subject assessment results, learning competencies, and support needs across your division.</p><span class="lg-fy-badge"><i class="mdi mdi-calendar-month-outline"></i> Fiscal Year <?= html_escape($div_fy); ?></span></div><div class="lg-hero-actions"><a class="btn btn-light" href="<?= $overview_url; ?>"><i class="mdi mdi-chart-bar mr-1"></i> Filipino Learning Summary</a><a class="btn btn-outline-light" href="<?= $records_url; ?>"><i class="mdi mdi-format-list-bulleted mr-1"></i> Filipino Learning Records</a></div></section>
+    <section class="lg-hero"><div class="lg-hero-copy"><span class="lg-eyebrow">FILIPINO DATAHUB · Filipino Subject<?= $div_setup_name !== '' ? ' · ' . $div_setup_name : ''; ?></span><h1>Division Dashboard</h1><p>Review Filipino subject assessment results, learning competencies, and support needs across your division.</p><span class="lg-fy-badge"><i class="mdi mdi-calendar-month-outline"></i> School Year <?= html_escape(school_year_range($div_fy)); ?></span></div><div class="lg-hero-actions"><a class="btn btn-light" href="<?= $overview_url; ?>"><i class="mdi mdi-chart-bar mr-1"></i> Filipino Learning Summary</a><a class="btn btn-outline-light" href="<?= $records_url; ?>"><i class="mdi mdi-format-list-bulleted mr-1"></i> Filipino Learning Records</a></div></section>
     <div class="row">
-        <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Summary status</span><span class="lg-stat-icon"><i class="mdi mdi-file-document-outline"></i></span></div><small>Current fiscal year</small><strong><?= $division_reporting ? 'Reported' : 'Not reported'; ?></strong><span class="lg-stat-hint">Review summary records <i class="mdi mdi-arrow-right"></i></span></div></a></div>
+        <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Summary status</span><span class="lg-stat-icon"><i class="mdi mdi-file-document-outline"></i></span></div><small>Current school year</small><strong><?= $division_reporting ? 'Reported' : 'Not reported'; ?></strong><span class="lg-stat-hint">Review summary records <i class="mdi mdi-arrow-right"></i></span></div></a></div>
         <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Encoded records</span><span class="lg-stat-icon"><i class="mdi mdi-file-document-outline"></i></span></div><small>Filipino competency gap entries</small><strong><?= number_format($record_count); ?></strong><span class="lg-stat-hint">View all entries <i class="mdi mdi-arrow-right"></i></span></div></a></div>
         <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Recorded assessed count</span><span class="lg-stat-icon"><i class="mdi mdi-account-group-outline"></i></span></div><small>Sum across submitted records</small><strong><?= number_format($learners_assessed); ?></strong><span class="lg-stat-hint">Open source data <i class="mdi mdi-arrow-right"></i></span></div></a></div>
         <div class="col-sm-6 col-xl-3"><a class="lg-stat-link" href="<?= $records_url; ?>"><div class="lg-stat"><div class="lg-stat-top"><span>Recorded gap count</span><span class="lg-stat-icon"><i class="mdi mdi-alert-circle-outline"></i></span></div><small><?= $learners_assessed > 0 ? number_format($gap_rate, 1) . '% recorded gap rate' : 'No assessed records'; ?></small><strong><?= number_format($learners_with_gap); ?></strong><span class="lg-stat-hint">Identify priority support <i class="mdi mdi-arrow-right"></i></span></div></a></div>
@@ -243,58 +243,6 @@ if (!empty($thematic_analysis['themes'])) {
         </div>
     </section>
 
-    <div class="division-section-heading"><h2>Division administration</h2><p>Maintain organizational records and enter division-level assessment summaries.</p></div>
-    <div class="row">
-        <div class="col-lg-12">
-            <section class="divd-card">
-                <div class="divd-card-head"><div><h4>Division reference data</h4><p>Organizational records remain available to division administrators; school accounts do not have sign-in access.</p></div></div>
-                <div class="divd-card-body">
-                    <div class="divd-glance">
-                        <span class="divd-glance-icon navy"><i class="mdi mdi-map-marker-multiple"></i></span>
-                        <div class="divd-glance-text"><strong><?= number_format($div_district_count); ?></strong><small>District<?= $div_district_count === 1 ? '' : 's'; ?></small></div>
-                        <a class="divd-glance-link" href="<?= $div_districts_url; ?>">Manage <i class="mdi mdi-arrow-right"></i></a>
-                    </div>
-                    <div class="divd-glance">
-                        <span class="divd-glance-icon green"><i class="mdi mdi-school-outline"></i></span>
-                        <div class="divd-glance-text"><strong>Manage</strong><small>School directory</small></div>
-                        <a class="divd-glance-link" href="<?= $div_schools_url; ?>">Manage <i class="mdi mdi-arrow-right"></i></a>
-                    </div>
-                </div>
-            </section>
-        </div>
-    </div>
-    <section class="divd-card">
-        <div class="divd-card-head"><div><h4>Quick actions</h4><p>Jump to your key division tasks.</p></div></div>
-        <div class="divd-card-body">
-            <div class="divd-quick-grid">
-                <a class="divd-quick" href="<?= $overview_url; ?>">
-                    <span class="divd-quick-icon"><i class="mdi mdi-chart-bar"></i></span>
-                    <span class="divd-quick-body"><strong>Filipino Learning Summary</strong><small>Review Filipino competencies</small></span>
-                    <span class="divd-quick-arrow"><i class="mdi mdi-arrow-right"></i></span>
-                </a>
-                <a class="divd-quick" href="<?= $records_url; ?>">
-                    <span class="divd-quick-icon"><i class="mdi mdi-format-list-bulleted"></i></span>
-                    <span class="divd-quick-body"><strong>Submitted Records</strong><small>View all entries</small></span>
-                    <span class="divd-quick-arrow"><i class="mdi mdi-arrow-right"></i></span>
-                </a>
-                <a class="divd-quick" href="<?= $phil_iri_url; ?>">
-                    <span class="divd-quick-icon"><i class="mdi mdi-book-open-page-variant"></i></span>
-                    <span class="divd-quick-body"><strong>Phil-IRI Division Entry</strong><small>Enter aggregate reading results</small></span>
-                    <span class="divd-quick-arrow"><i class="mdi mdi-arrow-right"></i></span>
-                </a>
-                <a class="divd-quick" href="<?= $crla_url; ?>">
-                    <span class="divd-quick-icon"><i class="mdi mdi-book-open-variant"></i></span>
-                    <span class="divd-quick-body"><strong>CRLA Division Entry</strong><small>Enter aggregate early literacy results</small></span>
-                    <span class="divd-quick-arrow"><i class="mdi mdi-arrow-right"></i></span>
-                </a>
-                <a class="divd-quick" href="<?= $div_setup_url; ?>">
-                    <span class="divd-quick-icon"><i class="mdi mdi-cogs"></i></span>
-                    <span class="divd-quick-body"><strong>Division Setup</strong><small>Configure details</small></span>
-                    <span class="divd-quick-arrow"><i class="mdi mdi-arrow-right"></i></span>
-                </a>
-            </div>
-        </div>
-    </section>
 </div>
 <script src="<?= base_url('assets/libs/chart-js/Chart.bundle.min.js'); ?>"></script>
 <script>

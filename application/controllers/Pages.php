@@ -616,7 +616,7 @@ class Pages extends CI_Controller
             'report_scope' => 'division',
             'report_badge' => array_key_exists('report_badge', $options)
                 ? (string) $options['report_badge']
-                : 'Fiscal Year ' . $fy,
+                : 'School Year ' . school_year_range($fy),
             'back_url' => array_key_exists('back_url', $options)
                 ? (string) $options['back_url']
                 : $default_back_url,
@@ -1213,7 +1213,7 @@ class Pages extends CI_Controller
                 $level_total += (int) $this->input->post($field);
             }
             if ($division_id > 0 && $grade >= 4 && $grade <= 10
-                && $level_total <= (int) $this->input->post('learners_assessed')) {
+                && $level_total === (int) $this->input->post('learners_assessed')) {
                 $school_year = $this->Page_model->phil_iri_default_sy($division_id, (int) $this->session->fy);
                 if ($this->Page_model->save_phil_iri($division_id, $school_year)) {
                     $this->session->set_flashdata('success', 'Phil-IRI results saved.');
@@ -1221,7 +1221,7 @@ class Pages extends CI_Controller
                     $this->session->set_flashdata('danger', 'The results could not be saved. Please try again.');
                 }
             } else {
-                $this->session->set_flashdata('danger', 'Check the grade level and ensure reading-level totals do not exceed learners assessed.');
+                $this->session->set_flashdata('danger', 'Check the grade level and ensure reading-level totals equal learners assessed.');
             }
         } else {
             $this->session->set_flashdata('danger', validation_errors('', ' '));
@@ -1433,12 +1433,12 @@ class Pages extends CI_Controller
         $data['is_school'] = false;
         $data['is_division_user'] = in_array($position, array('division', 'division_head', 'ict'), true);
         $data['summative_cpl_enabled'] = false;
-        $data['is_archive_year'] = (int) $this->session->fy < (int) date('Y');
+        $data['is_archive_year'] = (int) $this->session->fy < (int) date('Y') + 1;
         if ($data['entry_mode'] && !$data['is_division_user']) {
             show_error('Only division users can encode Learning Gap summaries.', 403);
         }
         if ($data['is_division_user'] && $data['entry_mode'] && $data['is_archive_year']) {
-            $this->session->set_flashdata('danger', 'Archived fiscal years are read-only. Return to the current fiscal year to encode or edit records.');
+            $this->session->set_flashdata('danger', 'Archived school years are read-only. Return to the current school year to encode or edit records.');
             redirect('Pages/learning_gap_archives');
             return;
         }
@@ -1553,7 +1553,7 @@ class Pages extends CI_Controller
         $data['title'] = 'Archived Learning Gap Records';
         $data['archive_years'] = $this->Page_model->learning_gap_archive_years($scope);
         $data['is_school'] = false;
-        $data['current_year'] = (int) date('Y');
+        $data['current_year'] = (int) date('Y') + 1;
 
         $this->load->view('templates/header');
         $this->load->view('templates/menu');
@@ -1591,7 +1591,7 @@ class Pages extends CI_Controller
         }
         $data['record_year'] = $requested_year > 0 ? $requested_year : (int) $this->session->fy;
         $data['has_year_filter'] = $requested_year > 0;
-        $data['is_archive_year'] = $data['record_year'] < (int) date('Y');
+        $data['is_archive_year'] = $data['record_year'] < (int) date('Y') + 1;
         $data['grade_filter'] = trim((string) $this->input->get('grade_level', true));
         $data['division_filter'] = $scope['type'] === 'region'
             ? (int) $this->input->get('division_id', true)
@@ -1703,8 +1703,8 @@ class Pages extends CI_Controller
             show_error('Only division users can encode Learning Gap summaries.', 403);
         }
         $this->require_post();
-        if ((int) $this->session->fy < (int) date('Y')) {
-            show_error('Archived fiscal years are read-only.', 403);
+        if ((int) $this->session->fy < (int) date('Y') + 1) {
+            show_error('Archived school years are read-only.', 403);
             return;
         }
 
@@ -1764,8 +1764,8 @@ class Pages extends CI_Controller
         }
 
         $this->require_post();
-        if ((int) $this->session->fy < (int) date('Y')) {
-            show_error('Archived fiscal years are read-only.', 403);
+        if ((int) $this->session->fy < (int) date('Y') + 1) {
+            show_error('Archived school years are read-only.', 403);
             return;
         }
         $id = (int) $this->input->post('id', true);
@@ -1875,6 +1875,91 @@ class Pages extends CI_Controller
         $this->load->view('templates/footer_basic');
     }
 
+    public function learning_competencies_view_update($area_id = 0)
+    {
+        $this->require_regional_learning_area_access();
+        $this->require_post();
+        $division_id = $this->regional_learning_area_division_id($this->input->post('division_id', true));
+        $area = $this->Page_model->learning_area_setting((int) $area_id, $division_id);
+        if (!$area) {
+            show_404();
+        }
+        $this->form_validation->set_rules('competency', 'Learning Competency', 'trim|required|max_length[1000]');
+        $this->form_validation->set_rules('term', 'Term', 'trim|required|in_list[Term 1,Term 2,Term 3,All Terms]');
+        if ($this->form_validation->run() === false) {
+            $this->session->set_flashdata('danger', validation_errors('', ' '));
+        } else {
+            $result = $this->Page_model->update_learning_competency(
+                (int) $this->input->post('id', true),
+                (int) $this->session->region,
+                $area,
+                trim((string) $this->input->post('competency', true)),
+                trim((string) $this->input->post('term', true))
+            );
+            if ($result === 'duplicate') {
+                $this->session->set_flashdata('danger', 'That learning competency already exists for the selected term.');
+            } elseif ($result) {
+                $this->session->set_flashdata('success', 'Learning competency updated.');
+            } else {
+                $this->session->set_flashdata('danger', 'The learning competency could not be updated.');
+            }
+        }
+        redirect('Pages/learning_competencies_view/' . (int) $area->id . '?division_id=' . $division_id);
+    }
+
+    public function learning_competencies_view_delete($area_id = 0)
+    {
+        $this->require_regional_learning_area_access();
+        $this->require_post();
+        $division_id = $this->regional_learning_area_division_id($this->input->post('division_id', true));
+        $area = $this->Page_model->learning_area_setting((int) $area_id, $division_id);
+        if (!$area) {
+            show_404();
+        }
+        $id = (int) $this->input->post('id', true);
+        if ($id < 1) {
+            show_404();
+        }
+        if ($this->Page_model->delete_learning_competency($id, (int) $this->session->region, $area)) {
+            $this->session->set_flashdata('success', 'Learning competency removed.');
+        } else {
+            $this->session->set_flashdata('danger', 'The learning competency could not be removed.');
+        }
+        redirect('Pages/learning_competencies_view/' . (int) $area->id . '?division_id=' . $division_id);
+    }
+
+    public function learning_competency_setup_update($area_id = 0)
+    {
+        $this->require_regional_learning_area_access();
+        $this->require_post();
+        $division_id = $this->regional_learning_area_division_id($this->input->post('division_id', true));
+        $area = $this->Page_model->learning_area_setting((int) $area_id, $division_id);
+        if (!$area) {
+            show_404();
+        }
+        $this->form_validation->set_rules('competency', 'Learning Competency', 'trim|required|max_length[1000]');
+        $this->form_validation->set_rules('term', 'Term', 'trim|required|in_list[Term 1,Term 2,Term 3,All Terms]');
+        if ($this->form_validation->run() === false) {
+            $this->session->set_flashdata('danger', validation_errors('', ' '));
+        } else {
+            $result = $this->Page_model->update_learning_competency(
+                (int) $this->input->post('id', true),
+                (int) $this->session->region,
+                $area,
+                trim((string) $this->input->post('competency', true)),
+                trim((string) $this->input->post('term', true))
+            );
+            if ($result === 'duplicate') {
+                $this->session->set_flashdata('danger', 'That learning competency already exists for the selected term.');
+            } elseif ($result) {
+                $this->session->set_flashdata('success', 'Learning competency updated.');
+            } else {
+                $this->session->set_flashdata('danger', 'The learning competency could not be updated.');
+            }
+        }
+        redirect('Pages/learning_competency_setup/' . (int) $area->id . '?division_id=' . $division_id);
+    }
+
     public function learning_competency_setup_save($area_id = 0)
     {
         $this->require_regional_learning_area_access();
@@ -1914,8 +1999,11 @@ class Pages extends CI_Controller
         if ($competency_id < 1) {
             show_404();
         }
-        $this->Page_model->delete_learning_competency((int) $competency_id, (int) $this->session->region);
-        $this->session->set_flashdata('success', 'Learning competency removed.');
+        if ($this->Page_model->delete_learning_competency((int) $competency_id, (int) $this->session->region, $area)) {
+            $this->session->set_flashdata('success', 'Learning competency removed.');
+        } else {
+            $this->session->set_flashdata('danger', 'The learning competency could not be removed.');
+        }
         redirect('Pages/learning_competency_setup/' . (int) $area->id . '?division_id=' . $division_id);
     }
 
@@ -1957,17 +2045,30 @@ class Pages extends CI_Controller
 
     public function learning_competency_options()
     {
-        if (!$this->session->logged_in || $this->session->position !== 'school') {
-            show_error('Only school accounts can request learning competency options.', 403);
+        if (!$this->session->logged_in) {
+            show_error('Authentication is required to request learning competency options.', 401);
         }
-        $school = $this->Common->one_cond_row('schools', 'schoolID', $this->session->username);
+        $position = (string) $this->session->position;
+        $region_id = 0;
+        if (in_array($position, array('division', 'division_head', 'ict'), true)) {
+            $division = $this->Page_model->one_cond_row('division', 'id', (int) $this->session->division);
+            $region_id = $division ? (int) $division->region_id : 0;
+        } elseif ($position === 'school') {
+            $school = $this->Common->one_cond_row('schools', 'schoolID', $this->session->username);
+            $region_id = $school ? (int) $school->region_id : 0;
+        } else {
+            show_error('This account is not authorized to request learning competency options.', 403);
+        }
         $grade = trim((string) $this->input->get('grade_level', true));
         $area = trim((string) $this->input->get('learning_area', true));
         $term = trim((string) $this->input->get('term', true));
+        if ($region_id <= 0) {
+            show_error('Your account has no valid regional assignment.', 403);
+        }
         $this->output->set_content_type('application/json')
             ->set_output(json_encode(array(
-                'competencies' => $school && $grade !== '' && $area !== '' && $term !== ''
-                    ? $this->Page_model->learning_competency_options((int) $school->region_id, $grade, $area, $term)
+                'competencies' => $grade !== '' && $area !== '' && $term !== ''
+                    ? $this->Page_model->learning_competency_options($region_id, $grade, $area, $term)
                     : array()
             )));
     }
@@ -2879,7 +2980,7 @@ class Pages extends CI_Controller
                 );
 
                 $this->session->set_userdata($user_data);
-                $this->session->set_userdata('fy', date('Y'));
+                $this->session->set_userdata('fy', (int) date('Y') + 1);
                 $this->session->set_flashdata('user_log', 'You are now loged in as '
                     . $this->session->position);
                 
@@ -2946,7 +3047,7 @@ class Pages extends CI_Controller
 
                 $this->session->sess_regenerate(TRUE);
                 $this->session->set_userdata($user_data);
-                $this->session->set_userdata('fy', date('Y'));
+                $this->session->set_userdata('fy', (int) date('Y') + 1);
                 $this->session->set_flashdata('user_log', 'You are now loged in as '
                     . $this->session->position);
                 redirect(base_url());
@@ -5867,7 +5968,7 @@ class Pages extends CI_Controller
         $data['hero_title'] = 'Completed Self-Assessment Checklist Report';
         $data['hero_description'] = 'Review finalized Self-Assessment Checklist submissions across the region, grouped by district and arranged alphabetically by school.';
         $data['report_scope'] = 'region';
-        $data['report_badge'] = 'Fiscal Year ' . $this->session->fy;
+        $data['report_badge'] = 'School Year ' . school_year_range($this->session->fy);
         $data['back_url'] = base_url();
         $data['records'] = $filtered_records;
         $data['district_groups'] = $this->build_checklist_report_groups($filtered_records);

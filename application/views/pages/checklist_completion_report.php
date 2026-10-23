@@ -805,7 +805,7 @@ foreach ($filter_options as $option) {
         <div class="card district-report-card">
             <div class="report-empty">
                 <i class="mdi mdi-database-search-outline"></i>
-                No finalized Self-Assessment Checklist records were found for the active fiscal year.
+                No finalized Self-Assessment Checklist records were found for the active school year.
             </div>
         </div>
     <?php endif; ?>

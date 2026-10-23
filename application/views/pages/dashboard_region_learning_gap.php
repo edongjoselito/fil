@@ -66,7 +66,7 @@ $theme_max_count = !empty($thematic_analysis['themes'])
             <h1>Regional Filipino Learning Overview</h1>
             <p class="rd-header-meta">
                 <span>Welcome, <?= html_escape($display_name); ?></span>
-                <span class="rd-num">Fiscal Year <?= (int) $this->session->fy; ?></span>
+                <span class="rd-num">School Year <?= html_escape(school_year_range($this->session->fy)); ?></span>
                 <span class="rd-num"><?= number_format($divisions_total); ?> division<?= $divisions_total === 1 ? '' : 's'; ?></span>
             </p>
             <p>Division-encoded summaries only; historical school-level entries remain stored but are excluded from these totals.</p>
@@ -203,56 +203,6 @@ $theme_max_count = !empty($thematic_analysis['themes'])
                     <div><i class="mdi mdi-chart-bar" aria-hidden="true"></i>No division performance data is available yet.</div>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <section class="rd-card" aria-labelledby="rd-theme-title">
-        <div class="rd-card-head">
-            <h2 id="rd-theme-title">Automated thematic analysis</h2>
-            <span class="rd-tag"><i class="mdi mdi-auto-fix" aria-hidden="true"></i> Language-rule assisted</span>
-            <p>Recurring themes detected in the division summary's intervention and remarks text.</p>
-        </div>
-        <div class="rd-card-body">
-            <?php if (empty($thematic_analysis['themes'])) : ?>
-                <div class="rd-empty">
-                    <i class="mdi mdi-file-search-outline" aria-hidden="true"></i>
-                    <p>No intervention or remarks text has been submitted yet, so there is nothing to analyse.</p>
-                </div>
-            <?php else : ?>
-                <?php
-                $leading_theme = $thematic_analysis['themes'][0];
-                $secondary_themes = array_slice($thematic_analysis['themes'], 1, 2);
-                $unclassified = isset($thematic_analysis['unclassified_count']) ? (int) $thematic_analysis['unclassified_count'] : 0;
-                ?>
-                <div class="rd-theme-facts">
-                    <span><strong class="rd-num"><?= number_format((int) $thematic_analysis['source_count']); ?></strong> records analysed</span>
-                    <span><strong class="rd-num"><?= number_format($reporting_division_count); ?></strong> reporting divisions</span>
-                    <span><strong class="rd-num"><?= number_format(count($thematic_analysis['themes'])); ?></strong> leading themes</span>
-                    <?php if ($unclassified > 0) : ?>
-                        <span><strong class="rd-num"><?= number_format($unclassified); ?></strong> unmatched by any theme</span>
-                    <?php endif; ?>
-                </div>
-                <p class="rd-insight">
-                    <strong>Key finding:</strong> the leading theme is <?= html_escape($leading_theme->theme); ?>, appearing in <?= number_format((int) $leading_theme->record_count); ?> division summary record<?= (int) $leading_theme->record_count === 1 ? '' : 's'; ?>.<?php if (!empty($secondary_themes)) : ?> Other recurring priorities include <?= html_escape(implode(' and ', array_map(function ($theme) { return $theme->theme; }, $secondary_themes))); ?>.<?php endif; ?>
-                </p>
-                <div class="rd-themes">
-                    <?php foreach ($thematic_analysis['themes'] as $theme) : ?>
-                        <?php $theme_width = $theme_max_count > 0 ? ((int) $theme->record_count / $theme_max_count) * 100 : 0; ?>
-                        <article class="rd-theme">
-                            <div class="rd-theme-head">
-                                <h3><?= html_escape($theme->theme); ?></h3>
-                                <span class="rd-theme-count rd-num"><?= number_format((int) $theme->record_count); ?></span>
-                            </div>
-                            <div class="rd-theme-bar" aria-hidden="true"><span style="width:<?= min(100, max(0, $theme_width)); ?>%"></span></div>
-                            <div class="rd-theme-meta"><?= number_format((int) $theme->record_count); ?> summary record<?= (int) $theme->record_count === 1 ? '' : 's'; ?> · <?= number_format((int) $theme->intervention_count); ?> intervention mention<?= (int) $theme->intervention_count === 1 ? '' : 's'; ?> · <?= number_format((int) $theme->remarks_count); ?> remark mention<?= (int) $theme->remarks_count === 1 ? '' : 's'; ?></div>
-                            <?php if (!empty($theme->examples)) : ?>
-                                <p class="rd-theme-quote">“<?= html_escape($theme->examples[0]); ?>”</p>
-                            <?php endif; ?>
-                        </article>
-                    <?php endforeach; ?>
-                </div>
-                <p class="rd-note">Themes are generated inside the system using transparent education-focused language rules. Treat them as decision-support indicators and validate them against the source records.</p>
-            <?php endif; ?>
         </div>
     </section>
 

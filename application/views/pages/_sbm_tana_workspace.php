@@ -41,7 +41,7 @@ $division_name = $division && trim((string) $division->description) !== ''
 $district_name = $district && trim((string) $district->description) !== ''
     ? $title_case($district->description)
     : 'Not assigned';
-$fiscal_year_label = 'Fiscal Year ' . $this->session->fy;
+$fiscal_year_label = 'School Year ' . school_year_range($this->session->fy);
 
 $school_initials = '';
 foreach (preg_split('/\s+/', trim($school_name)) as $word) {
@@ -218,7 +218,7 @@ if (!$ta_record || $ready_concern_count === 0) {
     $next_step = array(
         'eyebrow' => 'Ready for shortlist',
         'title' => 'Generate the TANA priority basis',
-        'description' => 'You already have scored indicators. Open the TANA Summary page to rank the current averages and identify the top concerns for the fiscal year.',
+        'description' => 'You already have scored indicators. Open the TANA Summary page to rank the current averages and identify the top concerns for the school year.',
         'url' => $summary_url,
         'cta' => 'Open TANA summary',
         'secondary_url' => '#tanaActions',
@@ -238,7 +238,7 @@ if (!$ta_record || $ready_concern_count === 0) {
     $next_step = array(
         'eyebrow' => 'Refine shortlist',
         'title' => 'Review the current priority ranking',
-        'description' => 'A TANA shortlist already exists for this fiscal year. Revisit the summary after saving if you want to refresh the ranking based on updated scores.',
+        'description' => 'A TANA shortlist already exists for this school year. Revisit the summary after saving if you want to refresh the ranking based on updated scores.',
         'url' => $summary_url,
         'cta' => 'Open TANA summary',
         'secondary_url' => '#tanaActions',
@@ -1172,7 +1172,7 @@ if (!$ta_record || $ready_concern_count === 0) {
                 </a>
                 <a href="#" class="hero-button hero-button-secondary" data-toggle="modal" data-target="#tanaFiscalYearModal">
                     <i class="mdi mdi-calendar-edit"></i>
-                    Change Fiscal Year
+                    Change School Year
                 </a>
                 <a href="<?= $dashboard_url; ?>" class="hero-button hero-button-tertiary">
                     <i class="mdi mdi-view-dashboard-outline"></i>
@@ -1208,7 +1208,7 @@ if (!$ta_record || $ready_concern_count === 0) {
         <div class="info-alert">
             <i class="mdi mdi-alert-circle-outline"></i>
             <div>
-                <strong>TA concern narratives are not available yet for this fiscal year</strong>
+                <strong>TA concern narratives are not available yet for this school year</strong>
                 <p>The TANA form can still be opened, but the best scoring basis comes from the concern statements encoded in the TA Provision Report.</p>
             </div>
         </div>
@@ -1380,7 +1380,7 @@ if (!$ta_record || $ready_concern_count === 0) {
                                                         <span class="indicator-number"><?= $escape($question->i_no); ?></span>
                                                         <div class="indicator-copy">
                                                             <h5><?= $escape($question->description); ?></h5>
-                                                            <p>Use the TA concern as the scoring basis for this indicator, then assess how strongly it deserves technical assistance attention this fiscal year.</p>
+                                                            <p>Use the TA concern as the scoring basis for this indicator, then assess how strongly it deserves technical assistance attention this school year.</p>
                                                         </div>
                                                         <span class="indicator-status <?= $manifestation['class']; ?>">
                                                             <i class="mdi mdi-clipboard-pulse-outline"></i>
@@ -1562,7 +1562,7 @@ if (!$ta_record || $ready_concern_count === 0) {
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="tanaFiscalYearModalLabel">Change Fiscal Year</h5>
+                    <h5 class="modal-title" id="tanaFiscalYearModalLabel">Change School Year</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -1570,11 +1570,11 @@ if (!$ta_record || $ready_concern_count === 0) {
                 <div class="modal-body">
                     <form action="<?= base_url('Pages/change_fy'); ?>" method="post">
                         <input type="hidden" name="<?= html_escape($this->security->get_csrf_token_name()); ?>" value="<?= html_escape($this->security->get_csrf_hash()); ?>">
-                        <label for="tanaFiscalYear">Fiscal Year</label>
+                        <label for="tanaFiscalYear">School Year</label>
                         <select id="tanaFiscalYear" name="new_fy" class="form-control" onchange="this.form.submit()">
                             <?php for ($year = 2023; $year <= 2030; $year++) : ?>
                                 <option value="<?= $year; ?>" <?= (string) $this->session->fy === (string) $year ? 'selected' : ''; ?>>
-                                    <?= $year; ?>
+                                    <?= ($year - 1) . '-' . $year; ?>
                                 </option>
                             <?php endfor; ?>
                         </select>

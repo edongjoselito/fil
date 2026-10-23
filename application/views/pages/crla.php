@@ -1,10 +1,33 @@
 <?php
-$totals = array('learners_assessed' => 0, 'low_emerging' => 0, 'high_emerging' => 0, 'developing' => 0, 'transitioning' => 0, 'at_grade_level' => 0);
+$grade_groups = array();
 foreach ($records as $record) {
-    foreach ($totals as $field => $unused) {
-        $totals[$field] += (int) $record->$field;
+    $group_key = (int) $record->grade_level . '|' . $record->language . '|' . $record->assessment_period;
+    if (!isset($grade_groups[$group_key])) {
+        $grade_groups[$group_key] = array(
+            'grade_level' => (int) $record->grade_level,
+            'language' => (string) $record->language,
+            'assessment_period' => (string) $record->assessment_period,
+            'learners_assessed' => 0,
+            'low_emerging' => 0,
+            'high_emerging' => 0,
+            'developing' => 0,
+            'transitioning' => 0,
+            'at_grade_level' => 0,
+        );
+    }
+    foreach (array('learners_assessed', 'low_emerging', 'high_emerging', 'developing', 'transitioning', 'at_grade_level') as $field) {
+        $grade_groups[$group_key][$field] += (int) $record->$field;
     }
 }
+usort($grade_groups, function ($a, $b) {
+    $grade_order = $a['grade_level'] <=> $b['grade_level'];
+    if ($grade_order !== 0) return $grade_order;
+    $language_order = array('Mother Tongue (L1)' => 0, 'Filipino' => 1, 'English' => 2);
+    $language_diff = ($language_order[$a['language']] ?? 99) <=> ($language_order[$b['language']] ?? 99);
+    if ($language_diff !== 0) return $language_diff;
+    $period_order = array('BOSY' => 0, 'EOSY' => 1);
+    return ($period_order[$a['assessment_period']] ?? 99) <=> ($period_order[$b['assessment_period']] ?? 99);
+});
 ?>
 <style>
     .reading-page{color:#38252b;padding:12px 0 32px}.reading-hero{margin:8px 0 18px;padding:24px 28px;border-radius:15px;color:#fff;background:linear-gradient(120deg,#3b0718,#922c43)}.reading-hero h1{margin:0 0 6px;color:#fff;font-size:24px}.reading-hero p{margin:0;color:#f1dce1}.reading-card{overflow:hidden;margin-bottom:18px;border:1px solid #ead7dc;border-radius:13px;background:#fff;box-shadow:0 5px 16px rgba(59,7,24,.045)}.reading-card-head{padding:15px 18px;border-bottom:1px solid #f0e4e7;background:#fdf9fa}.reading-card-head h2{margin:0;color:#3b0718;font-size:16px;font-weight:700}.reading-card-head p{margin:4px 0 0;color:#786971;font-size:12px}.reading-card-body{padding:18px}.reading-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.reading-grid .form-group{margin:0}.reading-page label{display:block;margin-bottom:5px;font-size:12px;font-weight:700}.reading-page .form-control{height:39px;border-color:#dfcbd1;border-radius:7px}.reading-page .btn-primary{border-color:#922c43;background:#922c43}.reading-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.reading-metric{padding:15px;border:1px solid #ead7dc;border-radius:11px;background:#fff}.reading-metric span{display:block;color:#786971;font-size:10px;font-weight:800;text-transform:uppercase}.reading-metric strong{display:block;margin-top:6px;color:#3b0718;font-size:23px}.reading-table{min-width:900px;margin:0}.reading-table th{background:#fbf4f5;color:#70545d;font-size:10px;text-transform:uppercase;white-space:nowrap}.reading-table td,.reading-table th{padding:10px 12px;vertical-align:middle}.reading-count{text-align:right;font-variant-numeric:tabular-nums}.reading-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:15px;padding-top:14px;border-top:1px solid #f0e4e7}.reading-muted{color:#786971;font-size:12px}
@@ -16,8 +39,9 @@ foreach ($records as $record) {
     .reading-card{margin-bottom:24px;border:1px solid var(--reading-line);border-radius:16px;background:#fff;box-shadow:0 8px 22px rgba(18,63,99,.07)}.reading-card-head{padding:22px 26px;border-bottom:1px solid var(--reading-line);background:#fbfdfe}.reading-card-head h2{margin:0;color:var(--reading-navy);font-size:17px;font-weight:700}.reading-card-head p{margin:4px 0 0;color:var(--reading-muted);font-size:12px}.reading-card-body{padding:24px 26px}
     .reading-page label{color:var(--reading-ink)}.reading-page .form-control{border-color:var(--reading-line);border-radius:8px}.reading-page .form-control:focus{border-color:var(--reading-blue);box-shadow:0 0 0 3px rgba(0,56,168,.14)}.reading-page .btn-primary{border-color:var(--reading-blue);background:var(--reading-blue)}.reading-page .btn-primary:hover{border-color:var(--reading-navy);background:var(--reading-navy)}.reading-page .btn-outline-primary{border-color:var(--reading-blue);color:var(--reading-blue)}.reading-page .btn-outline-primary:hover{color:#fff;background:var(--reading-blue)}
     .reading-metrics{margin-bottom:24px}.reading-metric{padding:18px;border:1px solid var(--reading-line);border-radius:14px;box-shadow:0 5px 16px rgba(18,63,99,.05)}.reading-metric span{color:var(--reading-muted)}.reading-metric strong{color:var(--reading-navy);font-size:25px}
+    .reading-grade-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:24px}.reading-grade-group{overflow:hidden;border:1px solid var(--reading-line);border-radius:14px;background:#fff;box-shadow:0 5px 16px rgba(18,63,99,.05)}.reading-grade-group h3{margin:0;padding:13px 16px;border-bottom:1px solid var(--reading-line);background:#edf3ff;color:var(--reading-navy);font-size:14px;font-weight:700}.reading-group-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:14px}.reading-group-count{padding:10px;border-radius:9px;background:#f8fbff}.reading-group-count span{display:block;color:var(--reading-muted);font-size:9px;font-weight:800;text-transform:uppercase}.reading-group-count strong{display:block;margin-top:4px;color:var(--reading-navy);font-size:19px}
     .reading-table th{background:#edf3ff;color:#405a78}.reading-table tbody tr:hover{background:#f8fbff}.reading-actions{border-top-color:var(--reading-line)}.reading-muted{color:var(--reading-muted)}
-    @media(max-width:767px){.reading-grid,.reading-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.reading-hero{padding:26px;border-radius:16px}.reading-hero h1{font-size:24px}.reading-card-head,.reading-card-body{padding:18px}}
+    @media(max-width:767px){.reading-grid,.reading-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.reading-grade-groups{grid-template-columns:1fr}.reading-hero{padding:26px;border-radius:16px}.reading-hero h1{font-size:24px}.reading-card-head,.reading-card-body{padding:18px}}
     @media(max-width:480px){.reading-grid{grid-template-columns:1fr}.reading-actions{align-items:stretch;flex-direction:column}.reading-actions .btn{width:100%}}
 </style>
 <div class="container-fluid reading-page">
@@ -39,9 +63,21 @@ foreach ($records as $record) {
 
     <section class="reading-metrics" aria-label="CRLA results summary">
         <div class="reading-metric"><span>Entries</span><strong><?= number_format(count($records)); ?></strong></div>
-        <div class="reading-metric"><span>Learners assessed</span><strong><?= number_format($totals['learners_assessed']); ?></strong></div>
-        <div class="reading-metric"><span>Low emerging</span><strong><?= number_format($totals['low_emerging']); ?></strong></div>
-        <div class="reading-metric"><span>At grade level</span><strong><?= number_format($totals['at_grade_level']); ?></strong></div>
+        <div class="reading-metric"><span>Grade / language / period groups</span><strong><?= number_format(count($grade_groups)); ?></strong></div>
+    </section>
+
+    <section class="reading-grade-groups" aria-label="CRLA counts by grade, language, and assessment period">
+        <?php if (empty($grade_groups)): ?><div class="reading-card"><div class="reading-card-body reading-muted">No counts to summarize yet.</div></div>
+        <?php else: foreach ($grade_groups as $group): ?>
+            <article class="reading-grade-group">
+                <h3>Grade <?= (int) $group['grade_level']; ?> · <?= html_escape($group['language']); ?> · <?= $group['assessment_period'] === 'BOSY' ? 'Beginning of School Year (BOSY)' : 'End of School Year (EOSY)'; ?></h3>
+                <div class="reading-group-counts">
+                    <?php foreach (array('learners_assessed' => 'Learners assessed', 'low_emerging' => 'Low emerging', 'high_emerging' => 'High emerging', 'developing' => 'Developing', 'transitioning' => 'Transitioning', 'at_grade_level' => 'At grade level') as $field => $label): ?>
+                        <div class="reading-group-count"><span><?= $label; ?></span><strong><?= number_format($group[$field]); ?></strong></div>
+                    <?php endforeach; ?>
+                </div>
+            </article>
+        <?php endforeach; endif; ?>
     </section>
 
     <section class="reading-card">

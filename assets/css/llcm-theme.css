@@ -46,8 +46,8 @@ h1, h2, h3, h4, h5, h6,
     font-family: var(--llcm-font);
 }
 .navbar-custom { background: #fff; box-shadow: 0 1px 0 var(--llcm-border); border-top: 3px solid transparent; border-image: linear-gradient(to right, var(--llcm-blue) 0 40%, var(--llcm-gold) 40% 60%, var(--llcm-red) 60% 100%) 1; }
-.navbar-custom .topbar-fiscal-year { height: 70px; padding: 14px 8px; }
-.navbar-custom .topbar-fiscal-year form {
+.navbar-custom .topbar-school-year { height: 70px; padding: 14px 8px; }
+.navbar-custom .topbar-school-year form {
     display: flex;
     align-items: center;
     height: 42px;
@@ -56,7 +56,7 @@ h1, h2, h3, h4, h5, h6,
     border-radius: 9px;
     background: #f7fafc;
 }
-.navbar-custom .topbar-fiscal-year label {
+.navbar-custom .topbar-school-year label {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -68,8 +68,8 @@ h1, h2, h3, h4, h5, h6,
     font-weight: 700;
     white-space: nowrap;
 }
-.navbar-custom .topbar-fiscal-year label i { color: var(--llcm-blue); font-size: 17px; }
-.navbar-custom .topbar-fiscal-year select {
+.navbar-custom .topbar-school-year label i { color: var(--llcm-blue); font-size: 17px; }
+.navbar-custom .topbar-school-year select {
     height: 100%;
     padding: 0 29px 0 10px;
     color: var(--llcm-navy);
@@ -82,7 +82,7 @@ h1, h2, h3, h4, h5, h6,
     font-weight: 700;
     cursor: pointer;
 }
-.navbar-custom .topbar-fiscal-year select:focus { box-shadow: inset 0 0 0 2px rgba(0,56,168,.22); }
+.navbar-custom .topbar-school-year select:focus { box-shadow: inset 0 0 0 2px rgba(0,56,168,.22); }
 .navbar-custom .global-back-button {
     display: inline-flex;
     align-items: center;
@@ -112,10 +112,10 @@ h1, h2, h3, h4, h5, h6,
     box-shadow: 0 0 0 3px rgba(240,170,32,.35);
 }
 @media (max-width: 575.98px) {
-    .navbar-custom .topbar-fiscal-year { padding-left: 3px; padding-right: 3px; }
-    .navbar-custom .topbar-fiscal-year label { width: 38px; padding: 0; justify-content: center; }
-    .navbar-custom .topbar-fiscal-year label span { display: none; }
-    .navbar-custom .topbar-fiscal-year select { width: 70px; padding-left: 7px; padding-right: 20px; }
+    .navbar-custom .topbar-school-year { padding-left: 3px; padding-right: 3px; }
+    .navbar-custom .topbar-school-year label { width: 38px; padding: 0; justify-content: center; }
+    .navbar-custom .topbar-school-year label span { display: none; }
+    .navbar-custom .topbar-school-year select { width: 105px; padding-left: 7px; padding-right: 20px; }
     .navbar-custom .global-back-button {
         width: 38px;
         padding: 0;

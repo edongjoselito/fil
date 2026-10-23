@@ -638,7 +638,7 @@ $rate_details = array(
                         </div>
                         <div class="sgc-progress"><span style="width: <?= $checklist_completion_width; ?>%; background:#8b1e3f;"></span></div>
                         <small class="d-block mt-2 text-muted">
-                            <?= $completed_checklist_total; ?> completed schools out of <?= $encoded_school_total; ?> encoded schools for Fiscal Year <?= html_escape($this->session->fy); ?>.
+                            <?= $completed_checklist_total; ?> completed schools out of <?= $encoded_school_total; ?> encoded schools for School Year <?= html_escape(school_year_range($this->session->fy)); ?>.
                         </small>
                     </div>
                 </a>

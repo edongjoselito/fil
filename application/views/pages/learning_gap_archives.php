@@ -20,7 +20,7 @@ $overall_gap_rate = $total_assessed > 0 ? ($total_with_gap / $total_assessed) * 
         <div class="archive-hero-copy">
             <span class="archive-eyebrow">Learning evidence · Yearly history</span>
             <h1>Archived Learning Gap Records</h1>
-            <p>Review records from earlier fiscal years without changing or mixing them with the active-year workspace.</p>
+            <p>Review records from earlier school years without changing or mixing them with the active-year workspace.</p>
         </div>
         <a class="btn btn-light" href="<?= base_url('Pages/learning_gap_records'); ?>">
             <i class="mdi mdi-format-list-bulleted" aria-hidden="true"></i> Current records
@@ -37,7 +37,7 @@ $overall_gap_rate = $total_assessed > 0 ? ($total_with_gap / $total_assessed) * 
     <section class="archive-panel" aria-labelledby="archive-years-title">
         <div class="archive-panel-head">
             <div>
-                <h2 id="archive-years-title">Records by fiscal year</h2>
+                <h2 id="archive-years-title">Records by school year</h2>
                 <p>Each year opens as a separate record directory within your assigned <?= $is_school ? 'school' : 'reporting'; ?> scope.</p>
             </div>
             <span class="archive-scope"><i class="mdi mdi-shield-account-outline" aria-hidden="true"></i> Scope protected</span>
@@ -47,7 +47,7 @@ $overall_gap_rate = $total_assessed > 0 ? ($total_with_gap / $total_assessed) * 
             <div class="archive-empty">
                 <i class="mdi mdi-archive-search-outline" aria-hidden="true"></i>
                 <h3>No yearly records available yet</h3>
-                <p>Fiscal-year archives will appear here after learning-gap records have been encoded.</p>
+                <p>School-year archives will appear here after learning-gap records have been encoded.</p>
             </div>
         <?php else : ?>
             <div class="archive-grid">
@@ -65,7 +65,7 @@ $overall_gap_rate = $total_assessed > 0 ? ($total_with_gap / $total_assessed) * 
                             <span class="archive-year-icon"><i class="mdi <?= $is_current ? 'mdi-calendar-check-outline' : 'mdi-archive-outline'; ?>" aria-hidden="true"></i></span>
                             <span class="archive-status"><?= $is_current ? 'Active year' : ($is_upcoming ? 'Upcoming year' : 'Archived · Read-only'); ?></span>
                         </div>
-                        <h3>Fiscal Year <?= $year; ?></h3>
+                        <h3>School Year <?= html_escape(school_year_range($year)); ?></h3>
                         <div class="archive-year-stats<?= $is_school ? ' is-school' : ''; ?>">
                             <div><strong><?= number_format((int) $year_row->record_count); ?></strong><span>Records</span></div>
                             <?php if (!$is_school) : ?>

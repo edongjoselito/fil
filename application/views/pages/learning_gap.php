@@ -48,18 +48,24 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
     .form-section-title:before{background:linear-gradient(#0038a8 0 40%,#f0aa20 40% 60%,#ce1126 60% 100%)}
     .competency-option:hover{border-color:#0038a8}.competency-option:has(input:checked){border-color:#0038a8;background:#edf3ff;box-shadow:inset 3px 0 #0038a8}.competency-option input{accent-color:#0038a8}
     .ranking-context,.rank-pill{background:#edf3ff;color:#0038a8}
+    .lgm-hero{display:flex;align-items:center;justify-content:space-between;gap:24px}.lgm-hero-copy{position:relative;z-index:1;min-width:0}.lgm-hero-actions{position:relative;z-index:1;flex:0 0 auto}.lgm-hero-actions .btn{padding:11px 18px;border:0;border-radius:10px;color:#082b4c;font-weight:700;white-space:nowrap;box-shadow:0 8px 18px rgba(0,20,60,.16)}
+    @media(max-width:767px){.lgm-hero{align-items:flex-start;flex-direction:column;gap:16px}.lgm-hero-actions,.lgm-hero-actions .btn{width:100%}}
 </style>
 <div class="lgm-page">
     <div class="lgm-hero">
-        <span class="lgm-eyebrow"><i class="mdi mdi-chart-donut-variant"></i><?= html_escape($scope_label); ?></span>
-        <h1><i class="mdi mdi-chart-box mr-2"></i>Filipino Learning Monitoring</h1>
-        <p><?= html_escape($scope_label); ?> · Fiscal Year <?= (int) $this->session->fy; ?> · Review division-level Filipino competency gaps and interventions.</p>
+        <div class="lgm-hero-copy">
+            <span class="lgm-eyebrow"><i class="mdi mdi-chart-donut-variant"></i><?= html_escape($scope_label); ?></span>
+            <h1><i class="mdi mdi-chart-box mr-2"></i>Filipino Learning Monitoring</h1>
+            <p><?= html_escape($scope_label); ?> · School Year <?= html_escape(school_year_range($this->session->fy)); ?> · Review division-level Filipino competency gaps and interventions.</p>
+        </div>
+        <?php if ($is_division_user && !$entry_mode && !$is_archive_year): ?>
+            <div class="lgm-hero-actions"><a class="btn btn-light" href="<?= base_url('Pages/learning_gap_entry'); ?>"><i class="mdi mdi-plus mr-1" aria-hidden="true"></i> Encode Division Summary</a></div>
+        <?php endif; ?>
     </div>
-    <?php if ($is_division_user && !$entry_mode && !$is_archive_year): ?><div class="mb-3"><a class="btn btn-primary" href="<?= base_url('Pages/learning_gap_entry'); ?>"><i class="mdi mdi-plus mr-1" aria-hidden="true"></i> Encode Division Summary</a></div><?php endif; ?>
 
     <?php if ($this->session->flashdata('success')): ?><div class="alert alert-success"><?= $this->session->flashdata('success'); ?></div><?php endif; ?>
     <?php if ($this->session->flashdata('danger')): ?><div class="alert alert-danger"><?= $this->session->flashdata('danger'); ?></div><?php endif; ?>
-    <?php if ($is_archive_year): ?><div class="alert alert-info"><i class="mdi mdi-lock-outline mr-1" aria-hidden="true"></i> Fiscal Year <?= (int) $this->session->fy; ?> is archived and read-only.</div><?php endif; ?>
+    <?php if ($is_archive_year): ?><div class="alert alert-info"><i class="mdi mdi-lock-outline mr-1" aria-hidden="true"></i> School Year <?= html_escape(school_year_range($this->session->fy)); ?> is archived and read-only.</div><?php endif; ?>
     <?php if (!$entry_mode): ?><div class="row">
         <div class="col-md-6"><a class="lgm-stat-link" href="<?= base_url('Pages/learning_gap_records'); ?>"><div class="lgm-stat"><span class="lgm-stat-icon"><i class="mdi mdi-file-document-outline"></i></span><small>Encoded records</small><strong><?= (int) $summary->record_count; ?></strong><span class="lgm-stat-hint">View submitted learning gap records <i class="mdi mdi-arrow-right"></i></span></div></a></div>
         <div class="col-md-6"><a class="lgm-stat-link" href="<?= base_url('Pages/learning_gap_records'); ?>"><div class="lgm-stat"><span class="lgm-stat-icon"><i class="mdi mdi-account-group-outline"></i></span><small>Recorded assessed count</small><strong><?= number_format((int) $summary->learners_assessed); ?></strong><span class="lgm-stat-hint">Sum across submitted records <i class="mdi mdi-arrow-right"></i></span></div></a></div>
@@ -107,11 +113,11 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
             <div class="form-section-title">1. Assessment details <span class="required-note">Fields marked * are required.</span></div>
             <div class="row">
                 <div class="col-md-2 form-group"><label>Grade Level *</label><select name="grade_level" class="custom-select" required><option value="">Select grade</option><?php foreach (array('Kindergarten','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12') as $grade): ?><option value="<?= $grade; ?>" <?= $value('grade_level') === $grade ? 'selected' : ''; ?>><?= $grade; ?></option><?php endforeach; ?></select></div>
-                <div class="col-md-3 form-group"><label>Learning Area / Subject *</label><select name="learning_area" id="learningArea" class="custom-select" required disabled><option value="">Select grade level first</option></select></div>
+                <div class="col-md-3 form-group"><label>Learning Area / Subject</label><input type="text" class="form-control" value="Filipino" readonly><input type="hidden" name="learning_area" id="learningArea" value="Filipino"></div>
                 <div class="col-md-2 form-group"><label>Trimester *</label><select name="term" id="term" class="custom-select" required><option value="">Select trimester</option><?php foreach (array('Term 1','Term 2','Term 3') as $term): ?><option value="<?= $term; ?>" <?= $value('term') === $term ? 'selected' : ''; ?>><?= $term; ?></option><?php endforeach; ?></select></div>
-                <div class="col-md-2 form-group"><label>Class Proficiency Level</label><div class="input-group"><input type="number" min="0" max="100" step="0.01" name="class_proficiency_level" class="form-control" value="<?= html_escape($value('class_proficiency_level')); ?>"><div class="input-group-append"><span class="input-group-text">%</span></div></div></div>
-                <div class="col-md-3 form-group"><label>Proficiency Level</label><select name="proficiency_level" class="custom-select"><option value="">Select level</option><?php foreach (array('Beginning','Developing','Approaching Proficient','Proficient','Advanced') as $proficiency_level): ?><option value="<?= $proficiency_level; ?>" <?= $value('proficiency_level') === $proficiency_level ? 'selected' : ''; ?>><?= $proficiency_level; ?></option><?php endforeach; ?></select></div>
-                <div class="col-12 form-group"><label>Least Learned Competency *</label><div id="learningCompetencies" class="competency-options"><p class="text-muted">Select grade level, learning area, and term first</p></div><small class="form-text text-muted">Check one or more competencies that were least learned.</small></div>
+                <div class="col-md-2 form-group"><label>Class Proficiency Level</label><div class="input-group"><input type="number" min="0" max="100" step="0.01" name="class_proficiency_level" id="classProficiencyLevel" class="form-control" value="<?= html_escape($value('class_proficiency_level')); ?>"><div class="input-group-append"><span class="input-group-text">%</span></div></div></div>
+                <div class="col-md-3 form-group"><label>Proficiency Level</label><input type="text" id="proficiencyLevelDisplay" class="form-control" value="<?= html_escape($value('proficiency_level')); ?>" placeholder="Calculated automatically" readonly><input type="hidden" name="proficiency_level" id="proficiencyLevel" value="<?= html_escape($value('proficiency_level')); ?>"><small class="form-text text-muted">Calculated from Class Proficiency Level.</small></div>
+                <div class="col-12 form-group"><label>Least Learned Competency *</label><div id="learningCompetencies" class="competency-options"><p class="text-muted">Choose grade level and trimester to load Filipino competencies.</p></div><small class="form-text text-muted">Check one or more competencies that were least learned.</small></div>
             </div>
             <?php if (!empty($summative_cpl_enabled)): ?>
             <div class="row">
@@ -234,11 +240,13 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
         var assessed = document.getElementById('learnersAssessed');
         var withGap = document.getElementById('learnersWithGap');
         var preview = document.getElementById('gapRatePreview');
+        var classProficiency = document.getElementById('classProficiencyLevel');
+        var proficiencyLevel = document.getElementById('proficiencyLevel');
+        var proficiencyLevelDisplay = document.getElementById('proficiencyLevelDisplay');
         var grade = document.querySelector('[name="grade_level"]');
         var learningArea = document.getElementById('learningArea');
         var term = document.getElementById('term');
         var learningCompetencies = document.getElementById('learningCompetencies');
-        var selectedArea = <?= json_encode($value('learning_area')); ?>;
         var selectedCompetencies = <?= json_encode(array_filter(preg_split('/\r\n|\r|\n/', $value('least_learned_competency')))); ?>;
         if (!assessed || !withGap || !preview) return;
         function updateRate() {
@@ -250,9 +258,27 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
         }
         assessed.addEventListener('input', updateRate);
         withGap.addEventListener('input', updateRate);
+        function updateProficiencyLevel() {
+            var value = classProficiency.value === '' ? null : Number(classProficiency.value);
+            var level = '';
+            if (value !== null && isFinite(value) && value >= 0 && value <= 100) {
+                if (value < 60) level = 'Beginning';
+                else if (value < 75) level = 'Developing';
+                else if (value < 80) level = 'Approaching Proficient';
+                else if (value < 90) level = 'Proficient';
+                else level = 'Advanced';
+            }
+            proficiencyLevel.value = level;
+            proficiencyLevelDisplay.value = level;
+        }
+        classProficiency.addEventListener('input', updateProficiencyLevel);
+        updateProficiencyLevel();
         function loadCompetencies() {
             learningCompetencies.innerHTML = '<p class="text-muted">Loading learning competencies...</p>';
-            if (!grade.value || !learningArea.value || !term.value) { learningCompetencies.innerHTML = '<p class="text-muted">Select grade level, learning area, and term first</p>'; return; }
+            var missing = [];
+            if (!grade.value) missing.push('grade level');
+            if (!term.value) missing.push('trimester');
+            if (missing.length) { learningCompetencies.innerHTML = '<p class="text-muted">Choose ' + missing.join(' and ') + ' to load Filipino competencies.</p>'; return; }
             fetch('<?= base_url('Pages/learning_competency_options'); ?>?grade_level=' + encodeURIComponent(grade.value) + '&learning_area=' + encodeURIComponent(learningArea.value) + '&term=' + encodeURIComponent(term.value), { credentials: 'same-origin' })
                 .then(function (response) { return response.json(); })
                 .then(function (data) {
@@ -263,26 +289,9 @@ $ranking_interp = $entry_mode || !$has_ranking_filter ? array() : lg_ranking_int
                 })
                 .catch(function () { learningCompetencies.innerHTML = '<p class="text-muted">Unable to load learning competencies</p>'; });
         }
-        grade.addEventListener('change', function () {
-            learningArea.disabled = true;
-            learningArea.innerHTML = '<option value="">Loading learning areas...</option>';
-            learningCompetencies.innerHTML = '<p class="text-muted">Select grade level, learning area, and term first</p>';
-            if (!grade.value) { learningArea.innerHTML = '<option value="">Select grade level first</option>'; return; }
-            fetch('<?= base_url('Pages/learning_area_options'); ?>?grade_level=' + encodeURIComponent(grade.value), { credentials: 'same-origin' })
-                .then(function (response) { return response.json(); })
-                .then(function (data) {
-                    var areas = data.areas || [];
-                    learningArea.innerHTML = '<option value="">Select learning area</option>';
-                    areas.forEach(function (area) { var option = document.createElement('option'); option.value = area; option.textContent = area; option.selected = area === selectedArea; learningArea.appendChild(option); });
-                    if (!areas.length) learningArea.innerHTML = '<option value="">No learning areas configured</option>';
-                    learningArea.disabled = !areas.length;
-                    loadCompetencies();
-                })
-                .catch(function () { learningArea.innerHTML = '<option value="">Unable to load learning areas</option>'; });
-        });
-        learningArea.addEventListener('change', loadCompetencies);
+        grade.addEventListener('change', loadCompetencies);
         term.addEventListener('change', loadCompetencies);
-        if (grade.value) grade.dispatchEvent(new Event('change'));
+        if (grade.value) loadCompetencies();
         updateRate();
     }());
 </script>

@@ -558,7 +558,7 @@ $overall_submission_total = array_sum($summary_totals);
                             <p>Click any submission count to open the district-level breakdown for that division.</p>
                         </div>
                         <span class="directory-card-badge">
-                            <i class="mdi mdi-view-list-outline"></i> Fiscal Year <?= html_escape($this->session->fy); ?>
+                            <i class="mdi mdi-view-list-outline"></i> School Year <?= html_escape(school_year_range($this->session->fy)); ?>
                         </span>
                     </div>
 

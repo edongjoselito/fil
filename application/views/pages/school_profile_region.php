@@ -218,8 +218,8 @@
                         </span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Fiscal Year</span>
-                        <span class="info-value"><?= html_escape($this->session->fy); ?></span>
+                        <span class="info-label">School Year</span>
+                        <span class="info-value"><?= html_escape(school_year_range($this->session->fy)); ?></span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Last Updated</span>
@@ -255,8 +255,8 @@
                         <span class="status-badge completed">Submitted</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Fiscal Year</span>
-                        <span class="info-value"><?= html_escape($this->session->fy); ?></span>
+                        <span class="info-label">School Year</span>
+                        <span class="info-value"><?= html_escape(school_year_range($this->session->fy)); ?></span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Last Updated</span>
@@ -286,8 +286,8 @@
                         <span class="status-badge completed">Submitted</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Fiscal Year</span>
-                        <span class="info-value"><?= html_escape($this->session->fy); ?></span>
+                        <span class="info-label">School Year</span>
+                        <span class="info-value"><?= html_escape(school_year_range($this->session->fy)); ?></span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Last Updated</span>
@@ -317,8 +317,8 @@
                         <span class="status-badge completed">Submitted</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Fiscal Year</span>
-                        <span class="info-value"><?= html_escape($this->session->fy); ?></span>
+                        <span class="info-label">School Year</span>
+                        <span class="info-value"><?= html_escape(school_year_range($this->session->fy)); ?></span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Last Updated</span>

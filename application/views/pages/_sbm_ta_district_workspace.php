@@ -90,7 +90,7 @@ $division_name = $division && trim((string) $division->description) !== ''
 $district_name = $district && trim((string) $district->description) !== ''
     ? $title_case($district->description)
     : 'Not assigned';
-$fiscal_year_label = 'Fiscal Year ' . $this->session->fy;
+$fiscal_year_label = 'School Year ' . school_year_range($this->session->fy);
 $status_label = !$has_ta_submission
     ? 'No TA form submitted yet'
     : ($is_locked ? 'Finalized and locked' : ($review_record ? 'Review in progress' : 'Ready for review'));

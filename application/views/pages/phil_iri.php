@@ -1,10 +1,32 @@
 <?php
-$totals = array('learners_assessed' => 0, 'independent' => 0, 'instructional' => 0, 'frustration' => 0, 'non_reader' => 0);
+$grade_groups = array();
 foreach ($records as $record) {
-    foreach ($totals as $field => $unused) {
-        $totals[$field] += (int) $record->$field;
+    $group_key = (int) $record->grade_level . '|' . $record->language . '|' . $record->assessment_period;
+    if (!isset($grade_groups[$group_key])) {
+        $grade_groups[$group_key] = array(
+            'grade_level' => (int) $record->grade_level,
+            'language' => (string) $record->language,
+            'assessment_period' => (string) $record->assessment_period,
+            'learners_assessed' => 0,
+            'independent' => 0,
+            'instructional' => 0,
+            'frustration' => 0,
+            'non_reader' => 0,
+        );
+    }
+    foreach (array('learners_assessed', 'independent', 'instructional', 'frustration', 'non_reader') as $field) {
+        $grade_groups[$group_key][$field] += (int) $record->$field;
     }
 }
+usort($grade_groups, function ($a, $b) {
+    $grade_order = $a['grade_level'] <=> $b['grade_level'];
+    if ($grade_order !== 0) return $grade_order;
+    $language_order = array('English' => 0, 'Filipino' => 1);
+    $language_diff = ($language_order[$a['language']] ?? 99) <=> ($language_order[$b['language']] ?? 99);
+    if ($language_diff !== 0) return $language_diff;
+    $period_order = array('Pre-test' => 0, 'Post-test' => 1);
+    return ($period_order[$a['assessment_period']] ?? 99) <=> ($period_order[$b['assessment_period']] ?? 99);
+});
 ?>
 <style>
     .reading-page{--reading-navy:#082b4c;--reading-blue:#0038a8;--reading-sky:#edf3ff;--reading-line:#d7e0ee;--reading-ink:#1d2e40;--reading-muted:#647487;--reading-gold:#f0aa20;--reading-red:#ce1126;color:var(--reading-ink);padding:12px 0 32px}
@@ -14,8 +36,8 @@ foreach ($records as $record) {
     .reading-hero h1,.reading-hero p{position:relative;z-index:1}.reading-hero h1{margin:0 0 7px;color:#fff;font-size:30px;font-weight:700}.reading-hero p{margin:0;color:#dceefa;font-size:15px;line-height:1.55}
     .reading-card{overflow:hidden;margin-bottom:24px;border:1px solid var(--reading-line);border-radius:16px;background:#fff;box-shadow:0 8px 22px rgba(18,63,99,.07)}.reading-card-head{padding:22px 26px;border-bottom:1px solid var(--reading-line);background:#fbfdfe}.reading-card-head h2{margin:0;color:var(--reading-navy);font-size:17px;font-weight:700}.reading-card-head p{margin:4px 0 0;color:var(--reading-muted);font-size:12px}.reading-card-body{padding:24px 26px}
     .reading-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.reading-grid .form-group{margin:0}.reading-page label{display:block;margin-bottom:5px;color:var(--reading-ink);font-size:12px;font-weight:700}.reading-page .form-control{height:39px;border-color:var(--reading-line);border-radius:7px}.reading-page .btn-primary{border-color:var(--reading-blue);background:var(--reading-blue)}.reading-page .btn-primary:hover{border-color:var(--reading-navy);background:var(--reading-navy)}.reading-page .btn-outline-primary{border-color:var(--reading-blue);color:var(--reading-blue)}.reading-page .btn-outline-primary:hover{color:#fff;background:var(--reading-blue)}
-    .reading-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:24px}.reading-metric{padding:18px;border:1px solid var(--reading-line);border-radius:14px;background:#fff;box-shadow:0 5px 16px rgba(18,63,99,.05)}.reading-metric span{display:block;color:var(--reading-muted);font-size:10px;font-weight:800;text-transform:uppercase}.reading-metric strong{display:block;margin-top:6px;color:var(--reading-navy);font-size:25px}.reading-table{min-width:760px;margin:0}.reading-table th{background:#edf3ff;color:#405a78;font-size:10px;text-transform:uppercase;white-space:nowrap}.reading-table td,.reading-table th{padding:10px 12px;vertical-align:middle}.reading-table tbody tr:hover{background:#f8fbff}.reading-count{text-align:right;font-variant-numeric:tabular-nums}.reading-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:15px;padding-top:14px;border-top:1px solid var(--reading-line)}.reading-muted{color:var(--reading-muted);font-size:12px}
-    @media(max-width:767px){.reading-grid,.reading-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.reading-hero{align-items:flex-start;padding:26px;border-radius:16px}.reading-hero h1{font-size:24px}.reading-card-head,.reading-card-body{padding:18px}.reading-grid .form-group{min-width:0}}
+    .reading-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:24px}.reading-metric{padding:18px;border:1px solid var(--reading-line);border-radius:14px;background:#fff;box-shadow:0 5px 16px rgba(18,63,99,.05)}.reading-metric span{display:block;color:var(--reading-muted);font-size:10px;font-weight:800;text-transform:uppercase}.reading-metric strong{display:block;margin-top:6px;color:var(--reading-navy);font-size:25px}.reading-grade-groups{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:24px}.reading-grade-group{overflow:hidden;border:1px solid var(--reading-line);border-radius:14px;background:#fff;box-shadow:0 5px 16px rgba(18,63,99,.05)}.reading-grade-group h3{margin:0;padding:13px 16px;border-bottom:1px solid var(--reading-line);background:#edf3ff;color:var(--reading-navy);font-size:14px;font-weight:700}.reading-group-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:14px}.reading-group-count{padding:10px;border-radius:9px;background:#f8fbff}.reading-group-count span{display:block;color:var(--reading-muted);font-size:9px;font-weight:800;text-transform:uppercase}.reading-group-count strong{display:block;margin-top:4px;color:var(--reading-navy);font-size:19px}.reading-table{min-width:760px;margin:0}.reading-table th{background:#edf3ff;color:#405a78;font-size:10px;text-transform:uppercase;white-space:nowrap}.reading-table td,.reading-table th{padding:10px 12px;vertical-align:middle}.reading-table tbody tr:hover{background:#f8fbff}.reading-count{text-align:right;font-variant-numeric:tabular-nums}.reading-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:15px;padding-top:14px;border-top:1px solid var(--reading-line)}.reading-muted{color:var(--reading-muted);font-size:12px}
+    @media(max-width:767px){.reading-grid,.reading-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.reading-grade-groups{grid-template-columns:1fr}.reading-hero{align-items:flex-start;padding:26px;border-radius:16px}.reading-hero h1{font-size:24px}.reading-card-head,.reading-card-body{padding:18px}.reading-grid .form-group{min-width:0}}
     @media(max-width:480px){.reading-grid{grid-template-columns:1fr}.reading-actions{align-items:stretch;flex-direction:column}.reading-actions .btn{width:100%}}
 </style>
 <div class="container-fluid reading-page">
@@ -40,9 +62,21 @@ foreach ($records as $record) {
 
     <section class="reading-metrics" aria-label="Phil-IRI results summary">
         <div class="reading-metric"><span>Entries</span><strong><?= number_format(count($records)); ?></strong></div>
-        <div class="reading-metric"><span>Learners assessed</span><strong><?= number_format($totals['learners_assessed']); ?></strong></div>
-        <div class="reading-metric"><span>Independent readers</span><strong><?= number_format($totals['independent']); ?></strong></div>
-        <div class="reading-metric"><span>Needs support</span><strong><?= number_format($totals['instructional'] + $totals['frustration'] + $totals['non_reader']); ?></strong></div>
+        <div class="reading-metric"><span>Grade / language / period groups</span><strong><?= number_format(count($grade_groups)); ?></strong></div>
+    </section>
+
+    <section class="reading-grade-groups" aria-label="Phil-IRI counts by grade, language, and assessment period">
+        <?php if (empty($grade_groups)): ?><div class="reading-card"><div class="reading-card-body reading-muted">No counts to summarize yet.</div></div>
+        <?php else: foreach ($grade_groups as $group): ?>
+            <article class="reading-grade-group">
+                <h3>Grade <?= (int) $group['grade_level']; ?> · <?= html_escape($group['language']); ?> · <?= html_escape($group['assessment_period']); ?></h3>
+                <div class="reading-group-counts">
+                    <?php foreach (array('learners_assessed' => 'Learners assessed', 'independent' => 'Independent', 'instructional' => 'Instructional', 'frustration' => 'Frustration', 'non_reader' => 'Non-reader') as $field => $label): ?>
+                        <div class="reading-group-count"><span><?= $label; ?></span><strong><?= number_format($group[$field]); ?></strong></div>
+                    <?php endforeach; ?>
+                </div>
+            </article>
+        <?php endforeach; endif; ?>
     </section>
 
     <section class="reading-card">
@@ -58,7 +92,8 @@ foreach ($records as $record) {
                         <div class="form-group"><label for="phil-<?= $field; ?>"><?= $label; ?></label><input id="phil-<?= $field; ?>" name="<?= $field; ?>" type="number" class="form-control" min="0" step="1" value="0" required></div>
                     <?php endforeach; ?>
                 </div>
-                <div class="reading-actions"><span class="reading-muted">Reading-level totals must not exceed learners assessed. Saving the same grade/language/period replaces its existing entry.</span><button class="btn btn-primary" type="submit">Save results</button></div>
+                <div id="phil-iri-count-check" class="alert alert-info py-2 mt-3 mb-0" role="status" aria-live="polite">Enter learner counts to check the total.</div>
+                <div class="reading-actions"><span class="reading-muted">Independent + Instructional + Frustration + Non-reader must equal Learners assessed. Saving the same grade/language/period replaces its existing entry.</span><button id="phil-iri-save" class="btn btn-primary" type="submit">Save results</button></div>
             </form>
         </div>
     </section>
@@ -74,3 +109,31 @@ foreach ($records as $record) {
         </table></div>
     </section>
 </div>
+<script>
+    (function () {
+        var fields = ['independent', 'instructional', 'frustration', 'non_reader'];
+        var assessed = document.getElementById('phil-learners_assessed');
+        var status = document.getElementById('phil-iri-count-check');
+        var save = document.getElementById('phil-iri-save');
+        var form = save && save.form;
+        if (!assessed || !status || !save || !form) return;
+        function checkTotal() {
+            var total = fields.reduce(function (sum, field) {
+                return sum + (Number(document.getElementById('phil-' + field).value) || 0);
+            }, 0);
+            var expected = Number(assessed.value) || 0;
+            var matches = total === expected;
+            status.className = 'alert py-2 mt-3 mb-0 ' + (matches ? 'alert-success' : 'alert-warning');
+            status.textContent = 'Reading-level total: ' + total.toLocaleString() + ' / Learners assessed: ' + expected.toLocaleString() + (matches ? ' — counts match.' : ' — adjust the counts so they match.');
+            save.disabled = !matches;
+        }
+        fields.concat(['learners_assessed']).forEach(function (field) {
+            document.getElementById('phil-' + field).addEventListener('input', checkTotal);
+        });
+        form.addEventListener('submit', function (event) {
+            checkTotal();
+            if (save.disabled) event.preventDefault();
+        });
+        checkTotal();
+    }());
+</script>

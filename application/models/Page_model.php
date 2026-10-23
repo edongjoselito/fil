@@ -7,6 +7,7 @@ class Page_model extends CI_Model{
     private $password_change_schema_ready = false;
     private $phil_iri_schema_ready = false;
     private $crla_schema_ready = false;
+    private $learning_area_settings_schema_ready = false;
 
     public function __construct(){
         $this->load->database();
@@ -2649,7 +2650,23 @@ public function save_learning_gap_record($school_id, $division_summary_id = null
     $assessed = (int) $this->input->post('learners_assessed', true);
     $with_gap = (int) $this->input->post('learners_with_gap', true);
     $class_proficiency_level = trim((string) $this->input->post('class_proficiency_level', true));
-    $proficiency_level = trim((string) $this->input->post('proficiency_level', true));
+    $proficiency_level = null;
+    if ($class_proficiency_level !== '' && is_numeric($class_proficiency_level)) {
+        $cpl = (float) $class_proficiency_level;
+        if ($cpl >= 0 && $cpl <= 100) {
+            if ($cpl < 60) {
+                $proficiency_level = 'Beginning';
+            } elseif ($cpl < 75) {
+                $proficiency_level = 'Developing';
+            } elseif ($cpl < 80) {
+                $proficiency_level = 'Approaching Proficient';
+            } elseif ($cpl < 90) {
+                $proficiency_level = 'Proficient';
+            } else {
+                $proficiency_level = 'Advanced';
+            }
+        }
+    }
     // Summative CPL columns remain supported for legacy school records.
     $cpl_summative_1 = trim((string) $this->input->post('cpl_summative_1', true));
     $cpl_summative_2 = trim((string) $this->input->post('cpl_summative_2', true));
@@ -2664,12 +2681,12 @@ public function save_learning_gap_record($school_id, $division_summary_id = null
         'district_id' => $district_id,
         'fiscal_year' => $this->learning_gap_year(),
         'grade_level' => $this->input->post('grade_level', true),
-        'learning_area' => $this->input->post('learning_area', true),
+        'learning_area' => 'Filipino',
         'term' => $this->input->post('term', true),
         'melc_competency' => null,
         'least_learned_competency' => $least_learned_competency,
         'class_proficiency_level' => $class_proficiency_level === '' ? null : $class_proficiency_level,
-        'proficiency_level' => $proficiency_level === '' ? null : $proficiency_level,
+        'proficiency_level' => $proficiency_level,
         'percent_not_meeting' => $assessed > 0 ? round(($with_gap / $assessed) * 100, 2) : 0,
         'learners_assessed' => $assessed,
         'learners_with_gap' => $with_gap,
@@ -3131,6 +3148,9 @@ private function ensure_crla_schema()
 
 public function add_learning_area_setting($division_id)
 {
+    if (!$this->ensure_learning_area_settings_id()) {
+        return false;
+    }
     $grade = trim((string) $this->input->post('grade_level', true));
     $area = 'Filipino';
     $exists = $this->db->where('division_id', (int) $division_id)
@@ -3145,6 +3165,39 @@ public function add_learning_area_setting($division_id)
         'learning_area' => $area,
         'created_by' => (string) $this->session->username,
     ));
+}
+
+private function ensure_learning_area_settings_id()
+{
+    if ($this->learning_area_settings_schema_ready) {
+        return true;
+    }
+
+    $id_column = $this->db->query('SELECT EXTRA, COLUMN_KEY FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = \'learning_area_settings\'
+        AND COLUMN_NAME = \'id\'')->row();
+    if (!$id_column) {
+        log_message('error', 'learning_area_settings.id is missing; cannot save learning area settings.');
+        return false;
+    }
+
+    if (stripos((string) $id_column->EXTRA, 'auto_increment') === false) {
+        if ((string) $id_column->COLUMN_KEY === '') {
+            $primary_key_result = $this->db->query('ALTER TABLE learning_area_settings ADD PRIMARY KEY (id)');
+            if (!$primary_key_result) {
+                log_message('error', 'Could not add a primary key to learning_area_settings.id.');
+                return false;
+            }
+        }
+        $auto_increment_result = $this->db->query('ALTER TABLE learning_area_settings MODIFY id INT UNSIGNED NOT NULL AUTO_INCREMENT');
+        if (!$auto_increment_result) {
+            log_message('error', 'Could not enable AUTO_INCREMENT for learning_area_settings.id.');
+            return false;
+        }
+    }
+
+    $this->learning_area_settings_schema_ready = true;
+    return true;
 }
 
 public function delete_learning_area_setting($id, $division_id)
@@ -3433,12 +3486,50 @@ public function add_learning_competency($region_id, $area)
     ));
 }
 
-public function delete_learning_competency($id, $region_id)
+public function delete_learning_competency($id, $region_id, $area = null)
 {
     $this->ensure_learning_competencies_table();
-    return $this->db->where('id', (int) $id)
+    $this->db->where('id', (int) $id)->where('region_id', (int) $region_id);
+    if ($area) {
+        $this->db->where('grade_level', (string) $area->grade_level)
+            ->where('learning_area', (string) $area->learning_area);
+    }
+    return $this->db->delete('learning_competencies');
+}
+
+public function update_learning_competency($id, $region_id, $area, $competency, $term)
+{
+    $this->ensure_learning_competencies_table();
+    $scope = array(
+        'id' => (int) $id,
+        'region_id' => (int) $region_id,
+        'grade_level' => (string) $area->grade_level,
+        'learning_area' => (string) $area->learning_area,
+    );
+    if (!$this->db->where($scope)->get('learning_competencies')->row()) {
+        log_message('error', 'Learning competency update was rejected because the ID is outside the selected grade, area, or region.');
+        return false;
+    }
+    $duplicate = $this->db->where('region_id', (int) $region_id)
+        ->where('grade_level', (string) $area->grade_level)
+        ->where('learning_area', (string) $area->learning_area)
+        ->where('term', (string) $term)->where('competency', (string) $competency)
+        ->where('id !=', (int) $id)->count_all_results('learning_competencies') > 0;
+    if ($duplicate) {
+        return 'duplicate';
+    }
+    $updated = $this->db->where('id', (int) $id)
         ->where('region_id', (int) $region_id)
-        ->delete('learning_competencies');
+        ->update('learning_competencies', array(
+            'competency' => (string) $competency,
+            'term' => (string) $term,
+        ));
+    if (!$updated) {
+        $error = $this->db->error();
+        log_message('error', 'Learning competency update failed for ID ' . (int) $id
+            . ': ' . (isset($error['message']) ? $error['message'] : 'unknown database error'));
+    }
+    return $updated;
 }
 
 public function update_learning_competency_term($id, $region_id)

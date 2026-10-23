@@ -462,7 +462,7 @@ $analysis_count = count($analysis_rows);
         <?php } else { ?>
             <div class="tana-empty">
                 <i class="mdi mdi-clipboard-alert-outline"></i>
-                No priority concerns are available for the selected fiscal year.
+                No priority concerns are available for the selected school year.
             </div>
         <?php } ?>
     </section>

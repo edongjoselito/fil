@@ -191,7 +191,7 @@ $top_priority_scores = array_slice($averages, 0, 3, true);
 
 $profile_url = $school ? base_url() . 'school/' . rawurlencode($school_id) : '#';
 $school_update_url = $school ? base_url() . 'Pages/school_update/' . rawurlencode($school->recID) : '#';
-$fiscal_year_label = 'Fiscal Year ' . $this->session->fy;
+$fiscal_year_label = 'School Year ' . school_year_range($this->session->fy);
 $action_plan_url = base_url() . 'Pages/sbm_action_plan';
 $action_plan_print_url = base_url() . 'Pages/sbm_action_plan_pview';
 $checklist_url = base_url() . 'Pages/sbm_checklist';
@@ -215,7 +215,7 @@ $workflow_cards = array(
         'status' => !$checklist ? 'Not started' : ($checklist_is_final ? 'Finalized' : 'Draft saved'),
         'state_class' => !$checklist ? 'state-empty' : ($checklist_is_final ? 'state-complete' : 'state-draft'),
         'summary' => !$checklist
-            ? 'No checklist saved for this fiscal year yet.'
+            ? 'No checklist saved for this school year yet.'
             : $checklist_answered . ' of 42 indicators answered.',
         'url' => $checklist_url,
         'cta' => !$checklist ? 'Start checklist' : 'Open checklist',
@@ -249,7 +249,7 @@ $workflow_cards = array(
         'state_class' => !$tana_summary_count ? 'state-empty' : ($tana_summary_finalized ? 'state-complete' : 'state-draft'),
         'summary' => !$tana_summary_count
             ? 'Rank the top concerns after scoring your TANA indicators.'
-            : $tana_summary_count . ' ranked priorities saved for this fiscal year.',
+            : $tana_summary_count . ' ranked priorities saved for this school year.',
         'url' => $tana_summary_url,
         'cta' => !$tana_summary_count ? 'Rank priorities' : 'Open priority list',
     ),
@@ -259,7 +259,7 @@ $workflow_cards = array(
         'status' => $action_plan_count > 0 ? 'Active' : 'No entries yet',
         'state_class' => $action_plan_count > 0 ? 'state-complete' : 'state-empty',
         'summary' => $action_plan_count > 0
-            ? $action_plan_count . ' action plan item(s) recorded for this fiscal year.'
+            ? $action_plan_count . ' action plan item(s) recorded for this school year.'
             : 'Build the school action plan from the issues identified in your assessments.',
         'url' => $action_plan_url,
         'cta' => $action_plan_count > 0 ? 'Manage action plan' : 'Create action plan',
@@ -280,7 +280,7 @@ if (!$checklist) {
     $next_step = array(
         'eyebrow' => 'Start here',
         'title' => 'Begin the self-assessment checklist',
-        'description' => 'The checklist is the foundation for the TA form, TANA scoring, and your action plan. Complete it first for Fiscal Year ' . $this->session->fy . '.',
+        'description' => 'The checklist is the foundation for the TA form, TANA scoring, and your action plan. Complete it first for School Year ' . school_year_range($this->session->fy) . '.',
         'url' => $checklist_url,
         'cta' => 'Start checklist',
         'secondary_url' => $school_update_url,
@@ -350,7 +350,7 @@ if (!$checklist) {
     $next_step = array(
         'eyebrow' => 'Almost done',
         'title' => 'Finalize the priority ranking',
-        'description' => 'Your ranked list is saved. Open it again to review the sequence and finalize the priorities for this fiscal year.',
+        'description' => 'Your ranked list is saved. Open it again to review the sequence and finalize the priorities for this school year.',
         'url' => $tana_summary_url,
         'cta' => 'Review ranking',
         'secondary_url' => $action_plan_url,
@@ -1215,7 +1215,7 @@ if (!$checklist) {
                     <div>
                         <small>Checklist Progress</small>
                         <h3><?= $checklist_answered; ?>/42</h3>
-                        <p><?= $checklist_is_final ? 'Checklist finalized for this fiscal year.' : 'Indicators answered in the self-assessment checklist.'; ?></p>
+                        <p><?= $checklist_is_final ? 'Checklist finalized for this school year.' : 'Indicators answered in the self-assessment checklist.'; ?></p>
                     </div>
                     <span class="dashboard-stat-icon"><i class="mdi mdi-clipboard-check-outline"></i></span>
                 </div>
@@ -1243,7 +1243,7 @@ if (!$checklist) {
                     <div>
                         <small>TANA Priorities</small>
                         <h3><?= (int) $tana_summary_count; ?></h3>
-                        <p><?= $tana_summary_finalized ? 'Priority list finalized and ready for follow-through.' : 'Ranked TANA priorities saved for this fiscal year.'; ?></p>
+                        <p><?= $tana_summary_finalized ? 'Priority list finalized and ready for follow-through.' : 'Ranked TANA priorities saved for this school year.'; ?></p>
                     </div>
                     <span class="dashboard-stat-icon"><i class="mdi mdi-format-list-numbered"></i></span>
                 </div>
@@ -1305,7 +1305,7 @@ if (!$checklist) {
                             <div class="assessment-summary-card">
                                 <small>TA Documentation</small>
                                 <strong><?= $ta_indicator_count; ?> indicators noted</strong>
-                                <p><?= $ta_form ? ($ta_is_final ? 'The TA form is finalized for this fiscal year.' : 'TA details are saved as draft and can still be refined.') : 'The TA form has not been started yet.'; ?></p>
+                                <p><?= $ta_form ? ($ta_is_final ? 'The TA form is finalized for this school year.' : 'TA details are saved as draft and can still be refined.') : 'The TA form has not been started yet.'; ?></p>
                             </div>
                         </div>
 

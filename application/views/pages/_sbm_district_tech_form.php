@@ -353,7 +353,7 @@ $ct = $field_value('ct', isset($entry->ct) ? $entry->ct : '');
             <h1><?= $escape(isset($hero_title) ? $hero_title : $title); ?></h1>
             <p class="tf-header-meta">
                 <span><?= $escape($district_name); ?></span>
-                <span>Fiscal Year <?= $escape($fiscal_year); ?></span>
+                <span>School Year <?= $escape(school_year_range($fiscal_year)); ?></span>
                 <span>TA Recommendation is required</span>
             </p>
         </div>

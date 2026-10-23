@@ -101,20 +101,20 @@ if ((string) $this->session->position === 'school') {
                 <?php endif; ?>
 
                 <?php
-                $selected_fiscal_year = isset($this->session->fy) ? (int) $this->session->fy : (int) date('Y');
-                $last_fiscal_year = max((int) date('Y') + 1, $selected_fiscal_year);
+                $selected_school_year = isset($this->session->fy) ? (int) $this->session->fy : (int) date('Y') + 1;
+                $last_school_year = max((int) date('Y') + 1, $selected_school_year);
                 ?>
-                <li class="topbar-fiscal-year">
+                <li class="topbar-school-year">
                     <form action="<?= base_url('Pages/change_fy'); ?>" method="post">
                         <input type="hidden" name="<?= html_escape($this->security->get_csrf_token_name()); ?>" value="<?= html_escape($this->security->get_csrf_hash()); ?>">
                         <input type="hidden" name="return_to" value="<?= html_escape($this->uri->uri_string()); ?>">
-                        <label for="globalFiscalYear">
+                        <label for="globalSchoolYear">
                             <i class="mdi mdi-calendar-range" aria-hidden="true"></i>
-                            <span>Fiscal Year</span>
+                            <span>School Year</span>
                         </label>
-                        <select id="globalFiscalYear" name="new_fy" aria-label="Change fiscal year" onchange="this.form.submit()">
-                            <?php for ($year = 2023; $year <= $last_fiscal_year; $year++) : ?>
-                                <option value="<?= $year; ?>" <?= $selected_fiscal_year === $year ? 'selected' : ''; ?>><?= $year; ?></option>
+                        <select id="globalSchoolYear" name="new_fy" aria-label="Change school year" onchange="this.form.submit()">
+                            <?php for ($year = 2023; $year <= $last_school_year; $year++) : ?>
+                                <option value="<?= $year; ?>" <?= $selected_school_year === $year ? 'selected' : ''; ?>><?= ($year - 1) . '-' . $year; ?></option>
                             <?php endfor; ?>
                         </select>
                     </form>

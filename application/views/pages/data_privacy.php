@@ -317,7 +317,7 @@
             <li><strong>Account details</strong> — Your full name, username, password (hashed), position or role, and the school or office you belong to. This controls what screens you can open.</li>
             <li><strong>SBM forms you fill out</strong> — Checklist answers, TA form narratives, TANA scores, priority rankings, and action plan items. These are the core outputs of the system.</li>
             <li><strong>SGC status</strong> — Whether your School Governance Council is organized, functional, or not yet formed.</li>
-            <li><strong>Login records</strong> — Timestamps of when you signed in and which fiscal year you selected. We use this only for session management and basic audit trails.</li>
+            <li><strong>Login records</strong> — Timestamps of when you signed in and which school year you selected. We use this only for session management and basic audit trails.</li>
           </ul>
           <div class="highlight-box">
             <i class="bi bi-info-circle me-2" style="color: var(--maroon);"></i>
@@ -403,7 +403,7 @@
             <li>Request deactivation of your account if you are no longer assigned to the school or office.</li>
           </ul>
           <p style="margin-top: 12px; color: var(--muted); font-size: 14px;">
-            <i class="bi bi-clock-history me-1"></i> We keep finalized SBM records for the current and previous fiscal years for compliance tracking. Older records may be archived.
+            <i class="bi bi-clock-history me-1"></i> We keep finalized SBM records for the current and previous school years for compliance tracking. Older records may be archived.
           </p>
         </div>
       </div>

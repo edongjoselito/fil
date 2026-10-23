@@ -157,7 +157,7 @@ $tana_url = $is_school_user ? base_url() . 'Pages/tana_summary' : $profile_url;
 $checklist_pdf_url = $is_school_user
     ? base_url() . 'Pages/sbm_checklist_pdf'
     : base_url() . 'Pages/sbm_checklist_pdf/' . rawurlencode($view_school_id);
-$fiscal_year_label = 'Fiscal Year ' . $this->session->fy;
+$fiscal_year_label = 'School Year ' . school_year_range($this->session->fy);
 
 $next_step = array(
     'eyebrow' => 'Start here',
@@ -193,7 +193,7 @@ if ($checklist_record && !$all_answered && $can_edit) {
     $next_step = array(
         'eyebrow' => 'Submission completed',
         'title' => 'Use the finalized checklist to continue planning',
-        'description' => 'Your checklist is finalized for this fiscal year. Move to the TA form, TANA priorities, and action plan to turn the findings into concrete next steps.',
+        'description' => 'Your checklist is finalized for this school year. Move to the TA form, TANA priorities, and action plan to turn the findings into concrete next steps.',
         'url' => $ta_url,
         'cta' => 'Open TA form',
         'secondary_url' => $action_plan_url,
@@ -1392,7 +1392,7 @@ if ($checklist_record && !$all_answered && $can_edit) {
                 </a>
                 <a href="#" class="hero-button hero-button-secondary fy-button" data-toggle="modal" data-target="#checklistFiscalYearModal">
                     <i class="mdi mdi-calendar-edit"></i>
-                    Change Fiscal Year
+                    Change School Year
                 </a>
                 <a href="<?= $dashboard_url; ?>" class="hero-button hero-button-tertiary">
                     <i class="mdi mdi-view-dashboard-outline"></i>
@@ -1459,7 +1459,7 @@ if ($checklist_record && !$all_answered && $can_edit) {
                     <div>
                         <small>Submission Status</small>
                         <h3><?= $escape($status_label); ?></h3>
-                        <p><?= !$checklist_record ? 'The checklist has not been saved yet for this fiscal year.' : ($is_finalized ? 'The submission is locked until a division reviewer unlocks it.' : 'Draft responses can still be updated before finalizing.'); ?></p>
+                        <p><?= !$checklist_record ? 'The checklist has not been saved yet for this school year.' : ($is_finalized ? 'The submission is locked until a division reviewer unlocks it.' : 'Draft responses can still be updated before finalizing.'); ?></p>
                     </div>
                     <span class="checklist-stat-icon"><i class="mdi mdi-shield-check-outline"></i></span>
                 </div>
@@ -1806,7 +1806,7 @@ if ($checklist_record && !$all_answered && $can_edit) {
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="checklistFiscalYearModalLabel">Change Fiscal Year</h5>
+                    <h5 class="modal-title" id="checklistFiscalYearModalLabel">Change School Year</h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
@@ -1814,11 +1814,11 @@ if ($checklist_record && !$all_answered && $can_edit) {
                 <div class="modal-body">
                     <form action="<?= base_url('Pages/change_fy'); ?>" method="post">
                         <input type="hidden" name="<?= html_escape($this->security->get_csrf_token_name()); ?>" value="<?= html_escape($this->security->get_csrf_hash()); ?>">
-                        <label for="checklistFiscalYear">Fiscal Year</label>
+                        <label for="checklistFiscalYear">School Year</label>
                         <select id="checklistFiscalYear" name="new_fy" class="form-control" onchange="this.form.submit()">
                             <?php for ($year = 2023; $year <= 2030; $year++) : ?>
                                 <option value="<?= $year; ?>" <?= (string) $this->session->fy === (string) $year ? 'selected' : ''; ?>>
-                                    <?= $year; ?>
+                                    <?= ($year - 1) . '-' . $year; ?>
                                 </option>
                             <?php endfor; ?>
                         </select>

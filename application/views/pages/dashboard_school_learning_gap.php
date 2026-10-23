@@ -11,7 +11,7 @@ $school_name = $school && trim((string) $school->schoolName) !== '' ? $school->s
 <div class="lg-home">
     <div class="hero">
         <h1>Welcome, <?= html_escape($school_name); ?></h1>
-        <p>FILIPINO DATAHUB for Fiscal Year <?= (int) $this->session->fy; ?> — encode Filipino subject learning competencies, interventions, and progress for your school.</p>
+        <p>FILIPINO DATAHUB for School Year <?= html_escape(school_year_range($this->session->fy)); ?> — encode Filipino subject learning competencies, interventions, and progress for your school.</p>
         <a href="<?= base_url('Pages/learning_gap'); ?>" class="btn btn-light mt-3"><i class="mdi mdi-plus-circle-outline"></i> Encode Filipino Learning Data</a>
     </div>
     <div class="row">

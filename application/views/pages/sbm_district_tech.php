@@ -52,7 +52,7 @@ foreach ($entries as $entry) {
 }
 
 $ta_metrics = array(
-    array('count' => $entry_count, 'label' => 'TA Entries', 'note' => 'Saved for the active fiscal year.', 'icon' => 'mdi-clipboard-list-outline'),
+    array('count' => $entry_count, 'label' => 'TA Entries', 'note' => 'Saved for the active school year.', 'icon' => 'mdi-clipboard-list-outline'),
     array('count' => $scheduled_count, 'label' => 'With Schedule', 'note' => 'Entries with a set schedule or timeline.', 'icon' => 'mdi-calendar-clock-outline'),
     array('count' => $scope_count, 'label' => 'With Scope', 'note' => 'Entries with concerned districts / SDO coordination.', 'icon' => 'mdi-map-marker-check-outline'),
     array('count' => $team_count, 'label' => 'With Team', 'note' => 'Entries with management or composite teams.', 'icon' => 'mdi-account-group-outline'),
@@ -468,7 +468,7 @@ $ta_metrics = array(
             <h1>District TA Workspace</h1>
             <p class="ta-header-meta">
                 <span><?= $escape($district_name); ?></span>
-                <span>Fiscal Year <?= $escape($fiscal_year); ?></span>
+                <span>School Year <?= $escape(school_year_range($fiscal_year)); ?></span>
                 <span><?= $entry_count; ?> <?= $entry_count === 1 ? 'entry' : 'entries'; ?></span>
             </p>
         </div>
@@ -518,7 +518,7 @@ $ta_metrics = array(
                 <h4><?= $escape($title); ?></h4>
                 <p>District-level recommendations, activity plans, coordination scope, and team assignments.</p>
             </div>
-            <span class="ta-tag"><i class="mdi mdi-filter-outline"></i> Fiscal Year <?= $escape($fiscal_year); ?></span>
+            <span class="ta-tag"><i class="mdi mdi-filter-outline"></i> School Year <?= $escape(school_year_range($fiscal_year)); ?></span>
         </div>
 
         <?php if (!empty($entries)) { ?>
@@ -604,7 +604,7 @@ $ta_metrics = array(
             <div class="ta-empty">
                 <i class="mdi mdi-wrench-clock"></i>
                 <h5>No district technical assistance entries yet</h5>
-                <p>Start building your district technical assistance plan by adding recommendations, strategies, schedules, and team assignments for the active fiscal year.</p>
+                <p>Start building your district technical assistance plan by adding recommendations, strategies, schedules, and team assignments for the active school year.</p>
                 <a href="<?= $new_entry_url; ?>" class="ta-btn ta-btn-primary">
                     <i class="mdi mdi-plus-circle-outline"></i> Add First TA Entry
                 </a>

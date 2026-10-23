@@ -111,7 +111,7 @@ $pdf_payload = array(
     'principles' => $principle_sections,
 );
 
-$pdf_file_name = 'SBM-Checklist-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', $school_id) . '-FY' . preg_replace('/[^0-9]/', '', $fiscal_year) . '.pdf';
+$pdf_file_name = 'SBM-Checklist-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', $school_id) . '-SY' . preg_replace('/[^0-9]/', '', $fiscal_year) . '.pdf';
 $position = strtolower(trim((string) $this->session->position));
 $is_school_user = $position === 'school';
 $back_url = $is_school_user
@@ -289,7 +289,7 @@ $success_message = $this->session->flashdata('success');
                 <span>School ID <?= $escape($school_id); ?></span>
                 <span><?= $escape($district_name); ?></span>
                 <span><?= $escape($division_name); ?></span>
-                <span>Fiscal Year <?= $escape($fiscal_year); ?></span>
+                <span>School Year <?= $escape(school_year_range($fiscal_year)); ?></span>
             </div>
 
             <div class="pdf-actions">
@@ -311,7 +311,7 @@ $success_message = $this->session->flashdata('success');
     function buildChecklistPdfDefinition(data) {
         const content = [
             { text: data.title, style: "title" },
-            { text: "Fiscal Year " + data.fiscal_year, style: "subtitle" },
+            { text: "School Year <?= school_year_range($fiscal_year); ?>", style: "subtitle" },
             {
                 columns: [
                     [

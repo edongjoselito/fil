@@ -18,7 +18,7 @@ $school = $this->Common->one_cond_row('schools', 'schoolID', $this->session->use
 $school_name = $school && trim((string) $school->schoolName) !== ''
     ? $title_case($school->schoolName)
     : $title_case((string) $this->session->user);
-$fiscal_year_label = 'Fiscal Year ' . $this->session->fy;
+$fiscal_year_label = 'School Year ' . school_year_range($this->session->fy);
 $action_plan_url = base_url() . 'Pages/sbm_action_plan';
 $print_view_url = base_url() . 'Pages/sbm_action_plan_pview';
 $checklist_url = base_url() . 'Pages/sbm_checklist';

@@ -316,7 +316,7 @@
                             <h4>District Submission Overview</h4>
                             <small class="text-muted">Select a submission count to view the participating schools.</small>
                         </div>
-                        <small class="text-muted">Fiscal Year <?= html_escape($this->session->fy); ?></small>
+                        <small class="text-muted">School Year <?= html_escape(school_year_range($this->session->fy)); ?></small>
                     </div>
 
                     <div class="district-table-wrap table-responsive">

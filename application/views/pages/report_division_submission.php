@@ -234,7 +234,7 @@ $dashboard_url = base_url();
                     </span>
                     <span class="report-pill">
                         <i class="mdi mdi-calendar"></i>
-                        Fiscal Year <?= html_escape($this->session->fy); ?>
+                        School Year <?= html_escape(school_year_range($this->session->fy)); ?>
                     </span>
                 </div>
             </div>
@@ -266,7 +266,7 @@ $dashboard_url = base_url();
                     <div class="report-card-header">
                         <div>
                             <h4><?= html_escape($title); ?></h4>
-                            <p>Submission completion rates per division for the current fiscal year.</p>
+                            <p>Submission completion rates per division for the current school year.</p>
                         </div>
                     </div>
 

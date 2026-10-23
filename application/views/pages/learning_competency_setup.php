@@ -93,7 +93,7 @@ $areas_url = base_url('Pages/learning_area_setup?division_id=' . (int) $selected
                 <?php if (empty($competencies)): ?>
                     Nothing encoded yet for this grade level and learning area.
                 <?php else: ?>
-                    Grouped by term<?= $is_view_only ? '.' : ' · change a term or remove an entry from its row.'; ?>
+                    Grouped by term<?= $is_view_only ? ' · edit or remove an entry from its row.' : ' · change a term or remove an entry from its row.'; ?>
                 <?php endif; ?>
             </p>
         </div>
@@ -120,6 +120,9 @@ $areas_url = base_url('Pages/learning_area_setup?division_id=' . (int) $selected
                             <p class="lc-item-text"><?= html_escape($text); ?></p>
                             <?php if (!$is_view_only): ?>
                                 <div class="lc-item-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#learningCompetencyEditModal" data-id="<?= (int) $competency->id; ?>" data-competency="<?= html_escape($competency->competency); ?>" data-term="<?= html_escape($term); ?>" onclick="setLearningCompetencyEdit(this)">
+                                        <i class="mdi mdi-pencil-outline" aria-hidden="true"></i> Edit
+                                    </button>
                                     <?= form_open('Pages/learning_competency_setup_update_term/' . (int) $area->id . '/' . (int) $competency->id, array('class' => 'lc-term-form')); ?>
                                         <input type="hidden" name="division_id" value="<?= (int) $selected_division_id; ?>">
                                         <select name="term" class="custom-select lc-term-select" onchange="this.form.submit()" aria-label="Move this competency to another term">
@@ -128,10 +131,21 @@ $areas_url = base_url('Pages/learning_area_setup?division_id=' . (int) $selected
                                         </select>
                                         <noscript><button type="submit" class="btn btn-sm btn-outline-primary">Save</button></noscript>
                                     <?= form_close(); ?>
-                                    <?= form_open('Pages/learning_competency_setup_delete/' . (int) $area->id, array('class' => 'lc-term-form', 'onsubmit' => "return confirm('Remove this learning competency?');")); ?>
+                                    <?= form_open('Pages/learning_competency_setup_delete/' . (int) $area->id, array('class' => 'lc-term-form', 'onsubmit' => "return confirm('Remove this competency from the regional catalog? This affects all divisions in the region.');")); ?>
                                         <input type="hidden" name="id" value="<?= (int) $competency->id; ?>">
                                         <input type="hidden" name="division_id" value="<?= (int) $selected_division_id; ?>">
                                         <button type="submit" class="lc-remove" title="Remove competency"><i class="mdi mdi-close" aria-hidden="true"></i><span class="sr-only">Remove competency: <?= html_escape($text); ?></span></button>
+                                    <?= form_close(); ?>
+                                </div>
+                            <?php else: ?>
+                                <div class="lc-item-actions">
+                                    <button type="button" class="btn btn-sm btn-outline-primary" data-toggle="modal" data-target="#learningCompetencyEditModal" data-id="<?= (int) $competency->id; ?>" data-competency="<?= html_escape($competency->competency); ?>" data-term="<?= html_escape($term); ?>" onclick="setLearningCompetencyEdit(this)">
+                                        <i class="mdi mdi-pencil-outline" aria-hidden="true"></i> Edit
+                                    </button>
+                                    <?= form_open('Pages/learning_competencies_view_delete/' . (int) $area->id, array('class' => 'lc-term-form', 'onsubmit' => "return confirm('Remove this competency from the regional catalog? This affects all divisions in the region.');")); ?>
+                                        <input type="hidden" name="id" value="<?= (int) $competency->id; ?>">
+                                        <input type="hidden" name="division_id" value="<?= (int) $selected_division_id; ?>">
+                                        <button type="submit" class="lc-remove" title="Remove competency"><i class="mdi mdi-delete-outline" aria-hidden="true"></i><span class="sr-only">Remove competency: <?= html_escape($text); ?></span></button>
                                     <?= form_close(); ?>
                                 </div>
                             <?php endif; ?>
@@ -141,4 +155,28 @@ $areas_url = base_url('Pages/learning_area_setup?division_id=' . (int) $selected
             </div>
         <?php endforeach; endif; ?>
     </section>
+    <div class="modal fade" id="learningCompetencyEditModal" tabindex="-1" role="dialog" aria-labelledby="learningCompetencyEditTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header"><h2 class="modal-title" id="learningCompetencyEditTitle">Edit learning competency</h2><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>
+                <div class="modal-body">
+                    <p class="text-muted">Changes update the regional catalog used by all divisions in this region.</p>
+                    <?= form_open(($is_view_only ? 'Pages/learning_competencies_view_update/' : 'Pages/learning_competency_setup_update/') . (int) $area->id, array('id' => 'learningCompetencyEditForm')); ?>
+                        <input type="hidden" name="id" id="learningCompetencyEditId">
+                        <input type="hidden" name="division_id" value="<?= (int) $selected_division_id; ?>">
+                        <div class="form-group"><label for="learningCompetencyEditTerm">Term</label><select name="term" id="learningCompetencyEditTerm" class="form-control" required><?php foreach (array('Term 1', 'Term 2', 'Term 3', 'All Terms') as $option): ?><option value="<?= html_escape($option); ?>"><?= html_escape($option); ?></option><?php endforeach; ?></select></div>
+                        <div class="form-group"><label for="learningCompetencyEditText">Learning competency</label><textarea name="competency" id="learningCompetencyEditText" class="form-control" rows="5" maxlength="1000" required></textarea></div>
+                        <div class="text-right"><button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button> <button type="submit" class="btn btn-primary"><i class="mdi mdi-content-save-outline" aria-hidden="true"></i> Save changes</button></div>
+                    <?= form_close(); ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function setLearningCompetencyEdit(trigger) {
+            document.getElementById('learningCompetencyEditId').value = trigger.getAttribute('data-id') || '';
+            document.getElementById('learningCompetencyEditTerm').value = trigger.getAttribute('data-term') || '';
+            document.getElementById('learningCompetencyEditText').value = trigger.getAttribute('data-competency') || '';
+        }
+    </script>
 </div>

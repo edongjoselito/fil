@@ -111,7 +111,7 @@ $dashboard_url = base_url();
                     </span>
                     <span class="report-pill">
                         <i class="mdi mdi-calendar"></i>
-                        Fiscal Year <?= html_escape($this->session->fy); ?>
+                        School Year <?= html_escape(school_year_range($this->session->fy)); ?>
                     </span>
                 </div>
             </div>
