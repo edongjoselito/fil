@@ -1170,7 +1170,7 @@ $filipino_supervisors = array(
                         <span><strong>Mga pangangailangan sa pagkatuto</strong><span>Batayan para sa nakatuong suporta</span></span>
                     </div>
                     <span class="insight-label">Pagkatutong nakasentro sa ebidensya</span>
-                    <h2>Mula datos tungo sa pagkilos</h2>
+                    <h2>Mula Datos Tungo sa Pagkilos</h2>
                     <p>Gamitin ang impormasyon sa pagkatuto upang makapagplano ng mas malinaw at angkop na tugon.</p>
                     <div class="cycle" aria-label="Tukuyin, unawain, at tumugon">
                         <div class="cycle-step"><strong>01</strong><span>Tukuyin</span></div>
@@ -1256,7 +1256,6 @@ $filipino_supervisors = array(
             <div class="section-heading">
                 <p class="section-kicker">Mga May-akda</p>
                 <h2 id="authors-title">Mga Filipino Supervisor ng 11 Schools Division Offices</h2>
-                <p>Ilalagay dito ang mga pangalan at larawan kapag naipasa na. Sa ngayon, si Geraldine Burgos lamang ang nakumpirma para sa SDO Davao Oriental.</p>
             </div>
             <div class="authors-grid">
                 <?php foreach ($filipino_supervisors as $supervisor) : ?>
